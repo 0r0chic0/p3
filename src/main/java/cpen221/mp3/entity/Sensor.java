@@ -1,6 +1,11 @@
 package cpen221.mp3.entity;
 
+import cpen221.mp3.event.ActuatorEvent;
 import cpen221.mp3.event.Event;
+
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.Socket;
 
 public class Sensor implements Entity {
     private final int id;
@@ -9,6 +14,8 @@ public class Sensor implements Entity {
     private String serverIP = null;
     private int serverPort = 0;
     private double eventGenerationFrequency = 0.2; // default value in Hz (1/s)
+
+    private Socket socket;
 
     public Sensor(int id, String type) {
         this.id = id;
@@ -61,11 +68,19 @@ public class Sensor implements Entity {
      */
     public boolean registerForClient(int clientId) {
         // implement this method
+        if(this.clientId==-1){
+            if(clientId>=0){
+                this.clientId = clientId;
+                return true;
+            }
+        }else if(clientId==this.clientId){
+            return true;
+        }
         return false;
     }
 
     /**
-     * Sets or updates the http endpoint that 
+     * Sets or updates the http endpoint that
      * the sensor should send events to
      *
      * @param serverIP the IP address of the endpoint
@@ -83,11 +98,45 @@ public class Sensor implements Entity {
      */
     public void setEventGenerationFrequency(double frequency){
         // implement this method
+        if(frequency>0){
+            this.eventGenerationFrequency = frequency;
+        }
     }
 
     public void sendEvent(Event event) {
-        // implement this method
 
+        int times = 0;
+        // implement this method
         // note that Event is a complex object that you need to serialize before sending
+        OutputStream os = null;
+        try {
+            if(serverIP==null||serverIP.equals("")||serverPort==0){
+                return;
+            }
+            socket = new Socket(serverIP,serverPort);
+            os = socket.getOutputStream();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        while(true){
+            try {
+                if(times==5){
+                    Thread.sleep(10*1000);
+                }
+                event.setTimeStamp(Math.random());
+                event.setValueDouble(Math.random());
+                os.write(event.toString().getBytes());
+                Thread.sleep((long) (eventGenerationFrequency*1000));
+                times = 0;
+            } catch (IOException e) {
+                times++;
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
     }
+
+
 }

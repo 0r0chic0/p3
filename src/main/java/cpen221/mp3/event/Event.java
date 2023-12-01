@@ -4,6 +4,7 @@ public interface Event {
     
     // returns the timestamp of the event
     double getTimeStamp();
+    void setTimeStamp(double timeStamp);
 
     // returns the client id of the event
     int getClientId();
@@ -21,4 +22,7 @@ public interface Event {
     // returns the boolean value of the event if available
     // returns false if the event does not have a boolean value
     boolean getValueBoolean();
+
+    void setValueDouble(double value);
+    void setValueBoolean(boolean value);
 }

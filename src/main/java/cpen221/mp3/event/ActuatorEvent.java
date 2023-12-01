@@ -3,38 +3,62 @@ package cpen221.mp3.event;
 public class ActuatorEvent implements Event {
     // TODO: Implement this class
     // you can add private fields and methods to this class
-
-    public ActuatorEvent(double TimeStamp, 
-                        int ClientId,
-                        int EntityId, 
-                        String EntityType, 
-                        boolean Value) {
+    private double timeStamp;
+    private int clientId;
+    private int entityId;
+    private String entityType;
+    private boolean value;
+    public ActuatorEvent(double TimeStamp,
+                         int ClientId,
+                         int EntityId,
+                         String EntityType,
+                         boolean Value) {
         // Implement this constructor
+        this.timeStamp = TimeStamp;
+        this.clientId = ClientId;
+        this.entityId = EntityId;
+        this.entityType = EntityType;
+        this.value = Value;
     }
 
     public double getTimeStamp() {
         // Implement this method
-        return 0;
+        return timeStamp;
+    }
+
+    @Override
+    public void setTimeStamp(double timeStamp) {
+        this.timeStamp = timeStamp;
     }
 
     public int getClientId() {
         // Implement this method
-        return 0;
+        return clientId;
     }
 
     public int getEntityId() {
         // Implement this method
-        return 0;
+        return entityId;
     }
 
     public String getEntityType() {
         // Implement this method
-        return null;
+        return entityType;
     }
 
     public boolean getValueBoolean() {
         // Implement this method
-        return false;
+        return value;
+    }
+
+    @Override
+    public void setValueDouble(double value) {
+
+    }
+
+    @Override
+    public void setValueBoolean(boolean value) {
+        this.value = value;
     }
 
     // Actuator events do not have a double value
