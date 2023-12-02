@@ -91,6 +91,14 @@ public class Filter {
      * @return true if the event satisfies the filter criteria, false otherwise
      */
     public boolean satisfies(Event event) {
+        if (filterList != null) {
+            for (Filter currentFilter : filterList) {
+                if (!currentFilter.satisfies(event)) {
+                    return false;
+                }
+            }
+            return true;
+        }
         if (event.getValueDouble() == -1) { //Event is from actuator
             if (booleanOperator == BooleanOperator.EQUALS) {
                 return event.getValueBoolean() == boolValue;
