@@ -28,4 +28,14 @@ public class Request {
     public String getRequestData() {
         return requestData;
     }
+
+    @Override
+    public String toString() {
+        return "Request{" +
+                "timeStamp=" + timeStamp +
+                ", requestType=" + requestType +
+                ", requestCommand=" + requestCommand +
+                ", requestData='" + requestData + '\'' +
+                '}';
+    }
 }

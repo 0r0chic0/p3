@@ -29,6 +29,9 @@ public class Actuator implements Entity {
 
     private void initServer() {
         try {
+            if(state==false){
+                return;
+            }
             ServerSocket server = new ServerSocket(port);
             receiveSocket = server.accept();
         } catch (IOException e) {
