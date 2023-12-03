@@ -174,7 +174,6 @@ public class Actuator implements Entity {
             e.printStackTrace();
         }
 
-
         while (true) {
             try {
                 if (times == 5) {

@@ -1,20 +1,30 @@
 package cpen221.mp3.server;
 
+import cpen221.mp3.client.RequestCommand;
+import cpen221.mp3.client.RequestType;
 import cpen221.mp3.entity.Actuator;
 import cpen221.mp3.client.Client;
+import cpen221.mp3.event.ActuatorEvent;
 import cpen221.mp3.event.Event;
 import cpen221.mp3.client.Request;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class Server {
     private Client client;
+    private List<Event> eventList;
+    private List<Integer> logList;
     private double maxWaitTime = 2; // in seconds
 
     // you may need to add additional private fields
 
     public Server(Client client) {
         // implement the Server constructor
+        this.client = client;
     }
 
     /**
@@ -47,6 +57,14 @@ public class Server {
      */
     public void setActuatorStateIf(Filter filter, Actuator actuator) {
         // implement this method and send the appropriate SeverCommandToActuator as a Request to the actuator
+        if (actuator.getClientId() == client.getClientId()) {
+            if (true) { //TODO: Implement filter
+                Request setState = new Request(RequestType.CONTROL, RequestCommand.CONTROL_SET_ACTUATOR_STATE,
+                        "false"); //TODO: Change sent data
+                eventList.add(new ActuatorEvent(setState.getTimeStamp(), client.getClientId(),
+                        actuator.getId(), actuator.getType(), false)); //TODO: Change boolean
+            }
+        }
     }
     
     /**
@@ -62,6 +80,14 @@ public class Server {
      */
     public void toggleActuatorStateIf(Filter filter, Actuator actuator) {
         // implement this method and send the appropriate SeverCommandToActuator as a Request to the actuator
+        if (actuator.getClientId() == client.getClientId()) {
+            if (true) { //TODO: Implement filter
+                Request setState = new Request(RequestType.CONTROL, RequestCommand.CONTROL_TOGGLE_ACTUATOR_STATE,
+                        "toggle"); //TODO: Change sent data
+                eventList.add(new ActuatorEvent(setState.getTimeStamp(), client.getClientId(),
+                        actuator.getId(), actuator.getType(), actuator.getState()));
+            }
+        }
     }
 
     /**
@@ -80,7 +106,7 @@ public class Server {
      * The list should be sorted in the order of event timestamps.
      * After the logs are read, they should be cleared from the server.
      *
-     * @return list of event IDs 
+     * @return list of events' entity IDs
      */
     public List<Integer> readLogs() {
         // implement this method
@@ -97,8 +123,13 @@ public class Server {
      * @return list of the events for the client in the given time window
      */
     public List<Event> eventsInTimeWindow(TimeWindow timeWindow) {
-        // implement this method
-        return null;
+        List<Event> eventsInTime = new ArrayList<>();
+        for (Event currentEvent : eventList) {
+            if (timeWindow.startTime <= currentEvent.getTimeStamp() && timeWindow.endTime >= currentEvent.getTimeStamp()) {
+                eventsInTime.add(currentEvent);
+            }
+        }
+        return eventsInTime;
     }
 
      /**
@@ -110,7 +141,13 @@ public class Server {
      */
     public List<Integer> getAllEntities() {
         // implement this method
-        return null;
+        List<Integer> entityList = new ArrayList<>();
+        for (Event currentEvent : eventList) {
+            if (!entityList.contains(currentEvent.getEntityId())) {
+                entityList.add(currentEvent.getEntityId());
+            }
+        }
+        return entityList;
     }
 
     /**
@@ -126,7 +163,10 @@ public class Server {
      */
     public List<Event> lastNEvents(int n) {
         // implement this method
-        return null;
+        List<Event> sortedEvents = eventList.stream()
+                .sorted(Comparator.comparingDouble(Event::getTimeStamp))
+                .collect(Collectors.toList());
+        return sortedEvents.subList(Math.max(sortedEvents.size() - n, 0), sortedEvents.size());
     }
 
     /**
@@ -139,7 +179,25 @@ public class Server {
      */
     public int mostActiveEntity() {
         // implement this method
-        return -1;
+        HashMap<Integer, Integer> eventCounts = new HashMap<>();
+        int maxEvents = 0;
+        int activeEntity = 0;
+        for (Event currentEvent : eventList) {
+            int currentId = currentEvent.getEntityId();
+            if (!eventCounts.containsKey(currentId)) {
+                eventCounts.put(currentId, 1);
+            } else {
+                eventCounts.put(currentId, eventCounts.get(currentId)+1);
+            }
+            if (eventCounts.get(currentId) > maxEvents) {
+                activeEntity = currentId;
+                maxEvents = eventCounts.get(currentId);
+            } else if (eventCounts.get(currentId) == maxEvents && currentId > activeEntity) {
+                activeEntity = currentId;
+                maxEvents = eventCounts.get(currentId);
+            }
+        }
+        return activeEntity;
     }
 
     /**

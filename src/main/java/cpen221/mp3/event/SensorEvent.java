@@ -64,9 +64,7 @@ public class SensorEvent implements Event {
     }
 
     @Override
-    public void setValueBoolean(boolean value) {
-
-    }
+    public void setValueBoolean(boolean value) { }
 
     @Override
     public String toString() {
