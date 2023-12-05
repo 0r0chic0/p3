@@ -8,6 +8,9 @@ import cpen221.mp3.event.ActuatorEvent;
 import cpen221.mp3.event.Event;
 import cpen221.mp3.client.Request;
 
+import java.io.*;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -19,12 +22,73 @@ public class Server {
     private List<Event> eventList;
     private List<Integer> logList;
     private double maxWaitTime = 2; // in seconds
+    private int port;
+    private String ip;
+    ServerSocket serverSocket;
 
     // you may need to add additional private fields
 
     public Server(Client client) {
         // implement the Server constructor
         this.client = client;
+        this.eventList = new ArrayList<>();
+        this.logList = new ArrayList<>();
+        this.port = client.getServerPort();
+        init();
+
+    }
+
+    public void init() {
+        try {
+            serverSocket = new ServerSocket(port);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        try {
+            start();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void start() throws IOException {
+        while (true) {
+            // block until a client connects
+            final Socket socket = serverSocket.accept();
+            // create a new thread to handle that client
+            Thread handler = new Thread(new Runnable() {
+                public void run() {
+                    try {
+                        try {
+                            handle(socket);
+                        } finally {
+                            socket.close();
+                        }
+                    } catch (IOException ioe) {
+                        // this exception wouldn't terminate serve(),
+                        // since we're now on a different thread, but
+                        // we still need to handle it
+                        ioe.printStackTrace();
+                    }
+                }
+            });
+            // start the thread
+            handler.start();
+        }
+    }
+
+    public void handle(Socket socket) throws IOException {
+        BufferedReader in = new BufferedReader(new InputStreamReader(
+                socket.getInputStream()));
+        PrintWriter out = new PrintWriter(new OutputStreamWriter(
+                socket.getOutputStream()), true);
+        Request inRequest = requestDecode(in.read());
+        processIncomingRequest(inRequest);
+    }
+
+    private Request requestDecode(int bytes) {
+        //TODO: implement .toString() decoder
+        return null;
     }
 
     /**
@@ -163,10 +227,16 @@ public class Server {
      */
     public List<Event> lastNEvents(int n) {
         // implement this method
-        List<Event> sortedEvents = eventList.stream()
+        List<Event> sortedEvents = sortList(eventList);
+        return sortedEvents.subList(Math.max(sortedEvents.size() - n, 0), sortedEvents.size());
+    }
+
+    public List<Event> sortList(List<Event> sorting) {
+        List<Event> sortedEvents = sorting.stream()
                 .sorted(Comparator.comparingDouble(Event::getTimeStamp))
                 .collect(Collectors.toList());
-        return sortedEvents.subList(Math.max(sortedEvents.size() - n, 0), sortedEvents.size());
+
+        return sortedEvents;
     }
 
     /**
@@ -237,7 +307,8 @@ public class Server {
     }
 
     void processIncomingEvent(Event event) {
-        // implement this method
+        eventList.add(event);
+        eventList = sortList(eventList);
     }
 
     void processIncomingRequest(Request request) {

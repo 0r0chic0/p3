@@ -12,7 +12,6 @@ public class Client {
     private String email;
     private String serverIP;
     private int serverPort;
-
     private Socket socket;
 
     // you would need additional fields to enable functionalities required for this class
@@ -27,7 +26,7 @@ public class Client {
     public int getClientId() {
         return clientId;
     }
-
+    public int getServerPort() { return serverPort; }
     /**
      * Registers an entity for the client
      *
@@ -53,7 +52,7 @@ public class Client {
         // note that Request is a complex object that you need to serialize before sending
         if(socket == null){
             try {
-                socket = new Socket(serverIP,serverPort);
+                socket = new Socket(serverIP, serverPort);
             } catch (IOException e) {
                 e.printStackTrace();
             }
