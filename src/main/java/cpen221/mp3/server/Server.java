@@ -122,11 +122,11 @@ public class Server {
     public void setActuatorStateIf(Filter filter, Actuator actuator) {
         // implement this method and send the appropriate SeverCommandToActuator as a Request to the actuator
         if (actuator.getClientId() == client.getClientId()) {
-            if (true) { //TODO: Implement filter
+            if (filter.satisfies(eventList.get(eventList.size()-1))) {
                 Request setState = new Request(RequestType.CONTROL, RequestCommand.CONTROL_SET_ACTUATOR_STATE,
-                        "false"); //TODO: Change sent data
-                eventList.add(new ActuatorEvent(setState.getTimeStamp(), client.getClientId(),
-                        actuator.getId(), actuator.getType(), false)); //TODO: Change boolean
+                        "true");
+                processIncomingEvent(new ActuatorEvent(setState.getTimeStamp(), client.getClientId(),
+                        actuator.getId(), actuator.getType(), true));
             }
         }
     }
@@ -145,7 +145,7 @@ public class Server {
     public void toggleActuatorStateIf(Filter filter, Actuator actuator) {
         // implement this method and send the appropriate SeverCommandToActuator as a Request to the actuator
         if (actuator.getClientId() == client.getClientId()) {
-            if (true) { //TODO: Implement filter
+            if (filter.satisfies(eventList.get(eventList.size()-1))) {
                 Request setState = new Request(RequestType.CONTROL, RequestCommand.CONTROL_TOGGLE_ACTUATOR_STATE,
                         "toggle"); //TODO: Change sent data
                 eventList.add(new ActuatorEvent(setState.getTimeStamp(), client.getClientId(),
