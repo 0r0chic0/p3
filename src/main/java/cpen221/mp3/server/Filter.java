@@ -116,21 +116,12 @@ public class Filter {
             return event.getValueBoolean() != boolValue;
         } else {
             if (matchField == null) { return false; }
-            if (matchField == "value") {
-                return switch (doubleOperator) {
-                    case EQUALS -> event.getValueDouble() == doubleValue;
-                    case LESS_THAN -> event.getValueDouble() < doubleValue;
-                    case GREATER_THAN -> event.getValueDouble() > doubleValue;
-                    case LESS_THAN_OR_EQUALS -> event.getValueDouble() <= doubleValue;
-                    case GREATER_THAN_OR_EQUALS -> event.getValueDouble() >= doubleValue;
-                };
-            }
             return switch (doubleOperator) {
-                case EQUALS -> event.getTimeStamp() == doubleValue;
-                case LESS_THAN -> event.getTimeStamp() < doubleValue;
-                case GREATER_THAN -> event.getTimeStamp() > doubleValue;
-                case LESS_THAN_OR_EQUALS -> event.getTimeStamp() <= doubleValue;
-                case GREATER_THAN_OR_EQUALS -> event.getTimeStamp() >= doubleValue;
+                case EQUALS -> event.getValueDouble() == doubleValue;
+                case LESS_THAN -> event.getValueDouble() < doubleValue;
+                case GREATER_THAN -> event.getValueDouble() > doubleValue;
+                case LESS_THAN_OR_EQUALS -> event.getValueDouble() <= doubleValue;
+                case GREATER_THAN_OR_EQUALS -> event.getValueDouble() >= doubleValue;
             };
         }
     }
@@ -156,7 +147,6 @@ public class Filter {
      * @return a new event if it satisfies the filter criteria, null otherwise
      */
     public Event sift(Event event) {
-        // TODO: maybe fix? seems weird
         if (satisfies(event)) { return event; }
         return null;
     }
@@ -181,7 +171,6 @@ public class Filter {
 
     @Override
     public String toString() {
-        // TODO: implement this method
         String operator;
         String value;
         String field = matchField;
