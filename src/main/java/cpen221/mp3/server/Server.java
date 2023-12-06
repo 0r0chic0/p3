@@ -4,6 +4,7 @@ import cpen221.mp3.client.RequestCommand;
 import cpen221.mp3.client.RequestType;
 import cpen221.mp3.entity.Actuator;
 import cpen221.mp3.client.Client;
+import cpen221.mp3.entity.Entity;
 import cpen221.mp3.event.ActuatorEvent;
 import cpen221.mp3.event.Event;
 import cpen221.mp3.client.Request;
@@ -291,20 +292,77 @@ public class Server {
     }
 
     /**
-     * the client can ask the server to predict what will be 
-     * the next n timestamps for the next n events 
+     * the client can ask the server to predict what will be
+     * the next n timestamps for the next n events
      * of the given entity of the client (the entity is identified by its ID).
-     * 
+     *
      * If the server has not received any events for an entity with that ID,
      * or if that Entity is not registered for the client, then this method should return an empty list.
-     * 
-     * @param entityId the ID of the entity
-     * @param n the number of timestamps to predict
-     * @return list of the predicted timestamps
+     *
+     * @param values      the list of historical values (either Boolean or Double)
+     * @param n           the number of values to predict
+     * @param alpha       smoothing factor for double values (0 < alpha < 1)
+     * @return list of predicted values (either Boolean or Double)
      */
-    public List<Double> predictNextNTimeStamps(int entityId, int n) {
-        // implement this method
-        return null;
+    public static List<Object> predictNextNValues(List<Object> values, int n, double alpha) {
+        List<Object> predictedValues = new ArrayList<>();
+
+        if (values.isEmpty() || n <= 0 || alpha <= 0 || alpha >= 1) {
+            return predictedValues;
+        }
+
+        // Determines the type of values associated with the entity
+        if (values.get(0) instanceof Boolean) {
+            // Binary values
+            List<Boolean> binaryValues = new ArrayList<>();
+            for (Object value : values) {
+                binaryValues.add((Boolean) value);
+            }
+            List<Boolean> predictedBinaries = predictNextNBinaryValues(binaryValues, n);
+            predictedValues.addAll(predictedBinaries);
+        } else if (values.get(0) instanceof Double) {
+            // Double values
+            List<Double> doubleValues = new ArrayList<>();
+            for (Object value : values) {
+                doubleValues.add((Double) value);
+            }
+            List<Double> predictedDoubles = predictNextNDoubleValues(doubleValues, n, alpha);
+            predictedValues.addAll(predictedDoubles);
+        }
+
+        return predictedValues;
+    }
+
+    // Predict the next N binary values
+    private static List<Boolean> predictNextNBinaryValues(List<Boolean> historicalValues, int n) {
+        // Implement your binary prediction logic here
+        // This can be a more sophisticated algorithm based on historical data
+        // For simplicity, we'll just invert the last value in this example
+        List<Boolean> predictedValues = new ArrayList<>();
+        boolean lastValue = historicalValues.get(historicalValues.size() - 1);
+        for (int i = 0; i < n; i++) {
+            predictedValues.add(!lastValue);
+        }
+        return predictedValues;
+    }
+
+    // Predict the next N double values using Exponential Moving Average
+    private static List<Double> predictNextNDoubleValues(List<Double> values, int n, double alpha) {
+        List<Double> predictedValues = new ArrayList<>();
+
+        // Initialize the EMA with the first value
+        double ema = values.get(0);
+
+        // Generate the next N values using Exponential Moving Average (EMA)
+        for (int i = 0; i < n; i++) {
+            // Calculate the next EMA
+            ema = alpha * values.get(i) + (1 - alpha) * ema;
+
+            // Add the predicted value to the result
+            predictedValues.add(ema);
+        }
+
+        return predictedValues;
     }
 
     /**
