@@ -292,78 +292,105 @@ public class Server {
     }
 
     /**
-     * the client can ask the server to predict what will be
-     * the next n timestamps for the next n events
+     * The client can ask the server to predict what will be
+     * the next n values  for the next n events
      * of the given entity of the client (the entity is identified by its ID).
+     * The values correspond to Event.getValueDouble() or Event.getValueBoolean()
+     * based on the type of the entity. That is why the return type is List<Object>.
      *
      * If the server has not received any events for an entity with that ID,
      * or if that Entity is not registered for the client, then this method should return an empty list.
      *
-     * @param values      the list of historical values (either Boolean or Double)
-     * @param n           the number of values to predict
-     * @param alpha       smoothing factor for double values (0 < alpha < 1)
-     * @return list of predicted values (either Boolean or Double)
+     * @param entityId the ID of the entity
+     * @param n the number of values to predict
+     * @param alpha smoothing factor for double values (0 < alpha < 1)
+     * @return list of the predicted values
      */
-    public static List<Object> predictNextNValues(List<Object> values, int n, double alpha) {
+    public List<Object> predictNextNValues(int entityId, int n, double alpha) {
         List<Object> predictedValues = new ArrayList<>();
 
-        if (values.isEmpty() || n <= 0 || alpha <= 0 || alpha >= 1) {
-            return predictedValues;
-        }
+        // Filter events associated with the specified entity ID
+        List<Event> eventsForEntity = eventList.stream()
+                .filter(event -> event.getEntityId() == entityId)
+                .collect(Collectors.toList());
 
-        // Determines the type of values associated with the entity
-        if (values.get(0) instanceof Boolean) {
-            // Binary values
-            List<Boolean> binaryValues = new ArrayList<>();
-            for (Object value : values) {
-                binaryValues.add((Boolean) value);
+
+        // Determine the type of values associated with the entity
+        if (!eventsForEntity.isEmpty()) {
+            Event sampleEvent = eventsForEntity.get(0); // Sample event to determine the type
+
+            if ("boolean".equals(sampleEvent.getEntityType())) { // Replace "boolean" with the actual type
+                // Predict the next N boolean values using logistic regression
+                List<Boolean> historicalValues = eventsForEntity.stream()
+                        .map(Event::getValueBoolean)
+                        .collect(Collectors.toList());
+
+                predictedValues.addAll(predictNextNBooleanValues(historicalValues, n));
+            } else if ("double".equals(sampleEvent.getEntityType())) { // Replace "double" with the actual type
+                // Predict the next N double values using Exponential Moving Average (EMA)
+                List<Double> historicalValues = eventsForEntity.stream()
+                        .map(Event::getValueDouble)
+                        .collect(Collectors.toList());
+
+                predictedValues.addAll(predictNextNDoubleValues(historicalValues, n, alpha));
             }
-            List<Boolean> predictedBinaries = predictNextNBinaryValues(binaryValues, n);
-            predictedValues.addAll(predictedBinaries);
-        } else if (values.get(0) instanceof Double) {
-            // Double values
-            List<Double> doubleValues = new ArrayList<>();
-            for (Object value : values) {
-                doubleValues.add((Double) value);
-            }
-            List<Double> predictedDoubles = predictNextNDoubleValues(doubleValues, n, alpha);
-            predictedValues.addAll(predictedDoubles);
         }
 
         return predictedValues;
     }
-
-    // Predict the next N binary values
-    private static List<Boolean> predictNextNBinaryValues(List<Boolean> historicalValues, int n) {
-        // Implement your binary prediction logic here
-        // This can be a more sophisticated algorithm based on historical data
-        // For simplicity, we'll just invert the last value in this example
-        List<Boolean> predictedValues = new ArrayList<>();
-        boolean lastValue = historicalValues.get(historicalValues.size() - 1);
-        for (int i = 0; i < n; i++) {
-            predictedValues.add(!lastValue);
-        }
-        return predictedValues;
-    }
-
-    // Predict the next N double values using Exponential Moving Average
-    private static List<Double> predictNextNDoubleValues(List<Double> values, int n, double alpha) {
+    /**
+     * Predict the next N double values using Exponential Moving Average (EMA).
+     *
+     * @param historicalValues list of historical double values
+     * @param n the number of values to predict
+     * @param alpha smoothing factor for double values (0 < alpha < 1)
+     * @return list of the predicted double values
+     */
+    private static List<Double> predictNextNDoubleValues(List<Double> historicalValues, int n, double alpha) {
         List<Double> predictedValues = new ArrayList<>();
 
-        // Initialize the EMA with the first value
-        double ema = values.get(0);
+        if (!historicalValues.isEmpty()) {
+            double ema = historicalValues.get(historicalValues.size() - 1);
 
-        // Generate the next N values using Exponential Moving Average (EMA)
-        for (int i = 0; i < n; i++) {
-            // Calculate the next EMA
-            ema = alpha * values.get(i) + (1 - alpha) * ema;
+            for (int i = 0; i < n; i++) {
+                // Calculate the next EMA
+                ema = alpha * historicalValues.get(i) + (1 - alpha) * ema;
 
-            // Add the predicted value to the result
-            predictedValues.add(ema);
+                // Add the predicted value to the result
+                predictedValues.add(ema);
+            }
         }
 
         return predictedValues;
     }
+
+    /**
+     * Predict the next N boolean values using a simplified version of logistic regression.
+     *
+     * @param historicalValues list of historical boolean values
+     * @param n the number of values to predict
+     * @return list of the predicted boolean values
+     */
+    private static List<Boolean> predictNextNBooleanValues(List<Boolean> historicalValues, int n) {
+        List<Boolean> predictedValues = new ArrayList<>();
+
+        if (!historicalValues.isEmpty()) {
+            // Logistic regression parameters (simplified for illustration)
+            double intercept = 0.0; // Adjust based on your needs
+            double slope = 0.1; // Adjust based on your needs
+
+            for (int i = 0; i < n; i++) {
+                // Apply sigmoid function to predict probability
+                double probability = 1.0 / (1.0 + Math.exp(-(intercept + slope)));
+                boolean prediction = probability > 0.5; // Threshold for binary prediction
+                predictedValues.add(prediction);
+            }
+        }
+
+        return predictedValues;
+    }
+
+
 
     /**
      * the client can ask the server to predict what will be 
@@ -379,9 +406,32 @@ public class Server {
      * @param n the number of double value to predict
      * @return list of the predicted timestamps
      */
-    public List<Object> predictNextNValues(int entityId, int n) {
-        // implement this method
-        return null;
+    public List<Object> predictNextNtimestamps(int entityId, int n,double alpha)
+    {
+        List<Object> predictedValues2 = new ArrayList<>();
+
+        // Filter events associated with the specified entity ID
+        List<Event> eventsForEntity2 = eventList.stream()
+                .filter(event -> event.getEntityId() == entityId)
+                .collect(Collectors.toList());
+
+        List<Double> historicalValues2 = eventsForEntity2.stream()
+                .map(Event::getValueDouble)
+                .collect(Collectors.toList());
+
+        if (!historicalValues2.isEmpty())
+        {
+            double ema = historicalValues2.get(eventsForEntity2.size() - 1);
+
+            for (int i = 0; i < n; i++) {
+                // Calculate the next EMA
+                ema = alpha * historicalValues2.get(i) + (1 - alpha) * ema;
+
+                // Add the predicted value to the result
+                predictedValues2.add(ema);
+            }
+
+        } return predictedValues2;
     }
 
     void processIncomingEvent(Event event) {
