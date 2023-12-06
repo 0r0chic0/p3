@@ -11,6 +11,11 @@ import cpen221.mp3.client.Request;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -20,11 +25,12 @@ import java.util.stream.Collectors;
 public class Server {
     private Client client;
     private List<Event> eventList;
-    private List<Integer> logList;
+    private List<Event> logList;
     private double maxWaitTime = 2; // in seconds
     private int port;
     private String ip;
-    ServerSocket serverSocket;
+    private ServerSocket serverSocket;
+    private Filter logFilter;
 
     // you may need to add additional private fields
 
@@ -80,8 +86,6 @@ public class Server {
     public void handle(Socket socket) throws IOException {
         BufferedReader in = new BufferedReader(new InputStreamReader(
                 socket.getInputStream()));
-        PrintWriter out = new PrintWriter(new OutputStreamWriter(
-                socket.getOutputStream()), true);
         Request inRequest = requestDecode(in.read());
         processIncomingRequest(inRequest);
     }
@@ -107,6 +111,7 @@ public class Server {
         // just updating the field. You may need to do some additional
         // work to ensure that events currently being processed are not
         // dropped or ignored by the change in maxWaitTime.
+        this.maxWaitTime = maxWaitTime; //TODO: update this with note
     }
 
     /**
@@ -144,6 +149,13 @@ public class Server {
      */
     public void toggleActuatorStateIf(Filter filter, Actuator actuator) {
         // implement this method and send the appropriate SeverCommandToActuator as a Request to the actuator
+        boolean checkNoEvent = true;
+        for (Event currentEvent : eventList) {
+            if (currentEvent.getEntityId() == actuator.getId()) {
+                checkNoEvent = false;
+            }
+        }
+        if (checkNoEvent) { return; }
         if (actuator.getClientId() == client.getClientId()) {
             if (filter.satisfies(eventList.get(eventList.size()-1))) {
                 Request setState = new Request(RequestType.CONTROL, RequestCommand.CONTROL_TOGGLE_ACTUATOR_STATE,
@@ -162,6 +174,11 @@ public class Server {
      */
     public void logIf(Filter filter) {
         // implement this method
+        this.logFilter = filter;
+        Event latest = eventList.get(eventList.size()-1);
+        if (filter.satisfies(latest)) {
+            logList.add(latest);
+        }
     }
 
     /**
@@ -174,7 +191,10 @@ public class Server {
      */
     public List<Integer> readLogs() {
         // implement this method
-        return null;
+        logList = sortList(logList);
+        return logList.stream()
+                .map(Event::getEntityId)
+                .toList();
     }
 
     /**
@@ -309,9 +329,16 @@ public class Server {
     void processIncomingEvent(Event event) {
         eventList.add(event);
         eventList = sortList(eventList);
+
     }
 
     void processIncomingRequest(Request request) {
         // implement this method
+       switch (request.getRequestType()) {
+           case CONFIG: switch (request.getRequestCommand()) {
+               case CONFIG_UPDATE_MAX_WAIT_TIME: updateMaxWaitTime(Integer.parseInt(request.getRequestData()));
+           }
+       }
+
     }
 }

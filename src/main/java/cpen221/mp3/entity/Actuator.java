@@ -22,14 +22,14 @@ public class Actuator implements Entity {
     private int serverPort = 0;
     // the following specifies the http endpoint that the actuator should be able to receive commands on from server
     private String host = null;
-    private int port = 0;
+    private static int port = 0;
 
     private Socket receiveSocket;
     private Socket socket;
 
     private void initServer() {
         try {
-            if(state==false){
+            if(!state){
                 return;
             }
             ServerSocket server = new ServerSocket(port);
@@ -37,6 +37,7 @@ public class Actuator implements Entity {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        port++;
     }
 
     public Actuator(int id, String type, boolean init_state) {

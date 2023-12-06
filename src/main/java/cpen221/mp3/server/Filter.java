@@ -99,12 +99,23 @@ public class Filter {
             }
             return true;
         }
+        if (matchField == "timestamp") {
+            return switch (doubleOperator) {
+                case EQUALS -> event.getTimeStamp() == doubleValue;
+                case LESS_THAN -> event.getTimeStamp() < doubleValue;
+                case GREATER_THAN -> event.getTimeStamp() > doubleValue;
+                case LESS_THAN_OR_EQUALS -> event.getTimeStamp() <= doubleValue;
+                case GREATER_THAN_OR_EQUALS -> event.getTimeStamp() >= doubleValue;
+            };
+        }
         if (event.getValueDouble() == -1) { //Event is from actuator
+            if (booleanOperator == null) { return false; }
             if (booleanOperator == BooleanOperator.EQUALS) {
                 return event.getValueBoolean() == boolValue;
             }
             return event.getValueBoolean() != boolValue;
         } else {
+            if (matchField == null) { return false; }
             if (matchField == "value") {
                 return switch (doubleOperator) {
                     case EQUALS -> event.getValueDouble() == doubleValue;
@@ -161,7 +172,9 @@ public class Filter {
     public List<Event> sift(List<Event> events) {
         List<Event> siftedEvents = new ArrayList<>();
         for (Event currentEvent : events) {
-            siftedEvents.add(sift(currentEvent));
+            if (sift(currentEvent) != null) {
+                siftedEvents.add(sift(currentEvent));
+            }
         }
         return siftedEvents;
     }
