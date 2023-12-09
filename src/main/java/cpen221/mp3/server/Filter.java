@@ -66,7 +66,7 @@ public class Filter {
      * @throws IllegalArgumentException if the given field is not "value" or "timestamp"
      */
     public Filter(String field, DoubleOperator operator, double value) {
-        if (field.equals("value")||field.equals("timestamp")) {
+        if (field.equals("value") || field.equals("timestamp")) {
             this.field = field;
         } else {
             throw new IllegalArgumentException();
@@ -99,7 +99,7 @@ public class Filter {
                 }
                 return true;
             }
-        } else if (this.booleanOperator!=null) {
+        } else if (this.booleanOperator != null) {
 
             if (this.booleanOperator == BooleanOperator.EQUALS) {
                 return booleanValue == event.getValueBoolean();

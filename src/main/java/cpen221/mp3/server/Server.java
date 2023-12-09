@@ -24,14 +24,14 @@ public class Server {
     private ConcurrentSkipListSet<Event> events = new ConcurrentSkipListSet<>(new Comparator<Event>() {
         @Override
         public int compare(Event o1, Event o2) {
-            return o1.getTimeStamp()-o2.getTimeStamp()>0?1:-1;
+            return o1.getTimeStamp() - o2.getTimeStamp()>0?1:-1;
         }
     });
 
     private ConcurrentSkipListSet<Request> requests = new ConcurrentSkipListSet<>(new Comparator<Request>() {
         @Override
         public int compare(Request r1, Request r2) {
-            return r1.getTimeStamp()-r2.getTimeStamp()>0?1:-1;
+            return r1.getTimeStamp() - r2.getTimeStamp()>0?1:-1;
         }
     });
     private Filter logFilter;
@@ -39,7 +39,7 @@ public class Server {
     private ConcurrentSkipListSet<Event> logList = new ConcurrentSkipListSet<>(new Comparator<Event>() {
         @Override
         public int compare(Event e1, Event e2) {
-            return e1.getTimeStamp()-e2.getTimeStamp()>0?1:-1;
+            return e1.getTimeStamp() - e2.getTimeStamp()>0?1:-1;
         }
     });
 
