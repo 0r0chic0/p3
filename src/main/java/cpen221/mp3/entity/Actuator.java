@@ -4,14 +4,12 @@ import cpen221.mp3.client.Request;
 import cpen221.mp3.event.Event;
 import cpen221.mp3.server.SeverCommandToActuator;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Random;
 
-public class Actuator implements Entity {
+public class Actuator implements Entity{
     private final int id;
     private int clientId;
     private final String type;
@@ -22,22 +20,43 @@ public class Actuator implements Entity {
     private int serverPort = 0;
     // the following specifies the http endpoint that the actuator should be able to receive commands on from server
     private String host = null;
-    private static int port = 0;
-
+    private int port = 0;
     private Socket receiveSocket;
     private Socket socket;
 
+    public String getHost() {
+        return host;
+    }
+
+    public void setHost(String host) {
+        this.host = host;
+    }
+
+    public void setPort(int port) {
+        this.port = port;
+    }
+
+    public Socket getSocket() {
+        return socket;
+    }
+
+    public void setSocket(Socket socket) {
+        this.socket = socket;
+    }
+
     private void initServer() {
         try {
-            if(!state){
+            if(state==false){
                 return;
             }
-            ServerSocket server = new ServerSocket(port);
-            receiveSocket = server.accept();
+            if(port!=0){
+                ServerSocket server = new ServerSocket(port);
+                receiveSocket = server.accept();
+                processServerMessage();
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
-        port++;
     }
 
     public Actuator(int id, String type, boolean init_state) {
@@ -46,28 +65,30 @@ public class Actuator implements Entity {
         this.type = type;
         this.state = init_state;
         // TODO: need to establish a server socket to listen for commands from server
-        initServer();
+//        initServer();
     }
-
     public Actuator(int id, int clientId, String type, boolean init_state) {
         this.id = id;
         this.clientId = clientId;   // registered for the client
         this.type = type;
         this.state = init_state;
         // TODO: need to establish a server socket to listen for commands from server
-        initServer();
+        //initServer();
     }
 
-    public Actuator(int id, String type, boolean init_state, String serverIP, int serverPort) {
+    public Actuator(int id, int clientId, String type, boolean init_state,String serverIP, int serverPort,int port) {
         this.id = id;
-        this.clientId = -1;         // remains unregistered
+        this.clientId = clientId;   // registered for the client
         this.type = type;
         this.state = init_state;
         this.serverIP = serverIP;
         this.serverPort = serverPort;
+        this.port = port;
         // TODO: need to establish a server socket to listen for commands from server
-        initServer();
+        new Thread(()->initServer()).start();
+
     }
+
 
     public Actuator(int id, int clientId, String type, boolean init_state, String serverIP, int serverPort) {
         this.id = id;
@@ -77,7 +98,7 @@ public class Actuator implements Entity {
         this.serverIP = serverIP;
         this.serverPort = serverPort;
         // TODO: need to establish a server socket to listen for commands from server
-        initServer();
+       // initServer();
     }
 
     public int getId() {
@@ -161,20 +182,19 @@ public class Actuator implements Entity {
         if (serverIP == null || serverIP.equals("") || serverPort == 0) {
             return;
         }
-        int times = 0;
+        int times = 0;//记录错误次数
         // implement this method
         // note that Event is a complex object that you need to serialize before sending
         OutputStream os = null;
+        ObjectOutputStream oos = null;
         try {
-            if (serverIP == null || serverIP.equals("") || serverPort == 0) {
-                return;
-            }
             socket = new Socket(serverIP, serverPort);
             os = socket.getOutputStream();
+            oos = new ObjectOutputStream(os);
         } catch (IOException e) {
             e.printStackTrace();
         }
-
+        //这里不断发送消息即可
         while (true) {
             try {
                 if (times == 5) {
@@ -182,7 +202,7 @@ public class Actuator implements Entity {
                 }
                 event.setTimeStamp(Math.random());
                 event.setValueBoolean(new Random().nextInt(2)==0?true:false);
-                os.write(event.toString().getBytes());
+                oos.writeObject(event.clone());
                 Thread.sleep((long) (eventGenerationFrequency * 1000));
                 times = 0;
             } catch (IOException e) {
@@ -195,16 +215,23 @@ public class Actuator implements Entity {
 
     }
 
-    public void processServerMessage(Request command) {
+    public void processServerMessage() {
         // implement this method
         while(true){
-            byte[] buf = new byte[1024];
             try {
                 InputStream is = receiveSocket.getInputStream();
-                int length = is.read(buf);
-                String str = new String(buf,0,length);
-                System.out.println("received instruction："+str);
+                ObjectInputStream ois = new ObjectInputStream(is);
+                SeverCommandToActuator o = (SeverCommandToActuator) ois.readObject();
+                if(o==SeverCommandToActuator.SET_STATE){
+                    this.state = true;
+                    System.out.println(this.getState());
+                }else if(o==SeverCommandToActuator.TOGGLE_STATE){
+                    this.state = !this.state;
+                    System.out.println(this.getState());
+                }
             } catch (IOException e) {
+                e.printStackTrace();
+            } catch (ClassNotFoundException e) {
                 e.printStackTrace();
             }
         }

@@ -21,11 +21,13 @@ enum BooleanOperator {
 public class Filter {
     // you can add private fields and methods to this class
     private BooleanOperator booleanOperator;
+    private boolean booleanValue;
+    private String field;
     private DoubleOperator doubleOperator;
-    private boolean boolValue;
     private double doubleValue;
-    private String matchField;
-    private List<Filter> filterList;
+
+    private List<Filter> filters;
+
 
     /**
      * Constructs a filter that compares the boolean (actuator) event value
@@ -40,10 +42,9 @@ public class Filter {
      * @param value the boolean value to match
      */
     public Filter(BooleanOperator operator, boolean value) {
+        // TODO: implement this method
         this.booleanOperator = operator;
-        this.boolValue = value;
-        this.doubleValue = Double.MAX_VALUE;
-
+        this.booleanValue = value;
     }
 
     /**
@@ -67,21 +68,25 @@ public class Filter {
      * @throws IllegalArgumentException if the given field is not "value" or "timestamp"
      */
     public Filter(String field, DoubleOperator operator, double value) {
+        // TODO: implement this method
+        if(field.equals("value")||field.equals("timestamp")){
+            this.field = field;
+        }else{
+            throw new IllegalArgumentException();
+        }
         this.doubleOperator = operator;
         this.doubleValue = value;
-        this.matchField = field;
-
     }
     
     /**
      * A filter can be composed of other filters.
      * in this case, the filter should satisfy all the filters in the list.
      * Constructs a complex filter composed of other filters.
-     *
      * @param filters the list of filters to use in the composition
      */
     public Filter(List<Filter> filters) {
-        this.filterList = filters;
+        // TODO: implement this method
+        this.filters = filters;
     }
 
     /**
@@ -91,39 +96,50 @@ public class Filter {
      * @return true if the event satisfies the filter criteria, false otherwise
      */
     public boolean satisfies(Event event) {
-        if (filterList != null) {
-            for (Filter currentFilter : filterList) {
-                if (!currentFilter.satisfies(event)) {
+        // TODO: implement this method
+        if(filters!=null){
+            for (Filter filter : filters) {
+                if(!filter.satisfies(event)){
                     return false;
                 }
+                return true;
             }
-            return true;
-        }
-        if (matchField == "timestamp") {
-            return switch (doubleOperator) {
-                case EQUALS -> event.getTimeStamp() == doubleValue;
-                case LESS_THAN -> event.getTimeStamp() < doubleValue;
-                case GREATER_THAN -> event.getTimeStamp() > doubleValue;
-                case LESS_THAN_OR_EQUALS -> event.getTimeStamp() <= doubleValue;
-                case GREATER_THAN_OR_EQUALS -> event.getTimeStamp() >= doubleValue;
-            };
-        }
-        if (event.getValueDouble() == -1) { //Event is from actuator
-            if (booleanOperator == null) { return false; }
-            if (booleanOperator == BooleanOperator.EQUALS) {
-                return event.getValueBoolean() == boolValue;
+        }else if(this.booleanOperator!=null){
+            //处理boolean的过滤
+            if(this.booleanOperator==BooleanOperator.EQUALS){
+                return booleanValue==event.getValueBoolean();
+            }else{
+                return booleanValue!=event.getValueBoolean();
             }
-            return event.getValueBoolean() != boolValue;
-        } else {
-            if (matchField == null) { return false; }
-            return switch (doubleOperator) {
-                case EQUALS -> event.getValueDouble() == doubleValue;
-                case LESS_THAN -> event.getValueDouble() < doubleValue;
-                case GREATER_THAN -> event.getValueDouble() > doubleValue;
-                case LESS_THAN_OR_EQUALS -> event.getValueDouble() <= doubleValue;
-                case GREATER_THAN_OR_EQUALS -> event.getValueDouble() >= doubleValue;
-            };
+        }else{
+            //处理double值的过滤
+            if(field.equals("value")){
+                if(doubleOperator==DoubleOperator.EQUALS){
+                     return doubleValue==event.getValueDouble();
+                }else if(doubleOperator==DoubleOperator.GREATER_THAN){
+                    return doubleValue<event.getValueDouble();
+                }else if(doubleOperator==DoubleOperator.LESS_THAN){
+                    return doubleValue>event.getValueDouble();
+                }else if(doubleOperator==DoubleOperator.GREATER_THAN_OR_EQUALS){
+                    return event.getValueDouble()>=doubleValue;
+                }else if(doubleOperator==DoubleOperator.LESS_THAN_OR_EQUALS){
+                    return event.getValueDouble()<=doubleValue;
+                }
+            }else{
+                if(doubleOperator==DoubleOperator.EQUALS){
+                    return doubleValue==event.getTimeStamp();
+                }else if(doubleOperator==DoubleOperator.GREATER_THAN){
+                    return doubleValue<event.getTimeStamp();
+                }else if(doubleOperator==DoubleOperator.LESS_THAN){
+                    return doubleValue>event.getTimeStamp();
+                }else if(doubleOperator==DoubleOperator.GREATER_THAN_OR_EQUALS){
+                    return event.getTimeStamp()>=doubleValue;
+                }else if(doubleOperator==DoubleOperator.LESS_THAN_OR_EQUALS){
+                    return event.getTimeStamp()<=doubleValue;
+                }
+            }
         }
+        return false;
     }
 
     /**
@@ -133,8 +149,11 @@ public class Filter {
      * @return true if every event in the list satisfies the filter criteria, false otherwise
      */
     public boolean satisfies(List<Event> events) {
-        for (Event currentEvent : events) {
-            if (!satisfies(currentEvent)) { return false; }
+        // TODO: implement this method
+        for (Event event : events) {
+           if(!satisfies(event)){
+               return false;
+           }
         }
         return true;
     }
@@ -147,7 +166,10 @@ public class Filter {
      * @return a new event if it satisfies the filter criteria, null otherwise
      */
     public Event sift(Event event) {
-        if (satisfies(event)) { return event; }
+        // TODO: implement this method
+        if(satisfies(event)){
+            return event;
+        }
         return null;
     }
 
@@ -160,30 +182,26 @@ public class Filter {
      *        or an empty list if no events in the given list satisfy the filter criteria
      */
     public List<Event> sift(List<Event> events) {
-        List<Event> siftedEvents = new ArrayList<>();
-        for (Event currentEvent : events) {
-            if (sift(currentEvent) != null) {
-                siftedEvents.add(sift(currentEvent));
+        // TODO: implement this method
+        ArrayList<Event> evs = new ArrayList<>();
+        for (Event event : events) {
+            if(satisfies(event)){
+                evs.add(event);
             }
         }
-        return siftedEvents;
+        return evs;
     }
+
 
     @Override
     public String toString() {
-        String operator;
-        String value;
-        String field = matchField;
-        if (booleanOperator == null) {
-            operator = doubleOperator.toString();
-        } else { operator = booleanOperator.toString(); }
-        if (doubleValue == Double.MAX_VALUE) {
-            value = String.valueOf(boolValue);
-        } else { value = String.valueOf(doubleValue); }
         return "Filter{" +
-                "Operator=" + operator +
-                ", value=" + value +
-                ", field" + field +
+                "booleanOperator=" + booleanOperator +
+                ", booleanValue=" + booleanValue +
+                ", field='" + field + '\'' +
+                ", doubleOperator=" + doubleOperator +
+                ", doubleValue=" + doubleValue +
+                ", filters=" + filters +
                 '}';
     }
 }

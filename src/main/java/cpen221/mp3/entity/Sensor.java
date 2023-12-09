@@ -4,6 +4,7 @@ import cpen221.mp3.event.ActuatorEvent;
 import cpen221.mp3.event.Event;
 
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 
@@ -16,6 +17,15 @@ public class Sensor implements Entity {
     private double eventGenerationFrequency = 0.2; // default value in Hz (1/s)
 
     private Socket socket;
+
+
+    public Socket getSocket() {
+        return socket;
+    }
+
+    public void setSocket(Socket socket) {
+        this.socket = socket;
+    }
 
     public Sensor(int id, String type) {
         this.id = id;
@@ -80,7 +90,7 @@ public class Sensor implements Entity {
     }
 
     /**
-     * Sets or updates the http endpoint that
+     * Sets or updates the http endpoint that 
      * the sensor should send events to
      *
      * @param serverIP the IP address of the endpoint
@@ -105,20 +115,22 @@ public class Sensor implements Entity {
 
     public void sendEvent(Event event) {
 
-        int times = 0;
+        int times = 0;//记录错误次数
         // implement this method
         // note that Event is a complex object that you need to serialize before sending
         OutputStream os = null;
+        ObjectOutputStream oos = null;
         try {
             if(serverIP==null||serverIP.equals("")||serverPort==0){
-                return;
+               return;
             }
             socket = new Socket(serverIP,serverPort);
             os = socket.getOutputStream();
+            oos = new ObjectOutputStream(os);
         } catch (IOException e) {
             e.printStackTrace();
         }
-
+        //这里不断发送消息即可
         while(true){
             try {
                 if(times==5){
@@ -126,7 +138,7 @@ public class Sensor implements Entity {
                 }
                 event.setTimeStamp(Math.random());
                 event.setValueDouble(Math.random());
-                os.write(event.toString().getBytes());
+                oos.writeObject(event.clone());
                 Thread.sleep((long) (eventGenerationFrequency*1000));
                 times = 0;
             } catch (IOException e) {

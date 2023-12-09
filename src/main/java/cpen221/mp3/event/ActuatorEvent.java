@@ -1,6 +1,6 @@
 package cpen221.mp3.event;
 
-public class ActuatorEvent implements Event {
+public class ActuatorEvent implements Event,Cloneable {
     // TODO: Implement this class
     // you can add private fields and methods to this class
     private double timeStamp;
@@ -8,17 +8,25 @@ public class ActuatorEvent implements Event {
     private int entityId;
     private String entityType;
     private boolean value;
-    public ActuatorEvent(double TimeStamp,
-                         int ClientId,
-                         int EntityId,
-                         String EntityType,
-                         boolean Value) {
+    public ActuatorEvent(double TimeStamp, 
+                        int ClientId,
+                        int EntityId, 
+                        String EntityType, 
+                        boolean Value) {
         // Implement this constructor
         this.timeStamp = TimeStamp;
         this.clientId = ClientId;
         this.entityId = EntityId;
         this.entityType = EntityType;
         this.value = Value;
+    }
+
+    public ActuatorEvent clone(){
+        try {
+            return (ActuatorEvent) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public double getTimeStamp() {
@@ -58,7 +66,7 @@ public class ActuatorEvent implements Event {
 
     @Override
     public void setValueBoolean(boolean value) {
-        this.value = value;
+         this.value = value;
     }
 
     // Actuator events do not have a double value

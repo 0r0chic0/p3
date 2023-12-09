@@ -1,6 +1,9 @@
 package cpen221.mp3.event;
 
 public interface Event {
+
+
+    public Object clone();
     
     // returns the timestamp of the event
     double getTimeStamp();
@@ -25,4 +28,5 @@ public interface Event {
 
     void setValueDouble(double value);
     void setValueBoolean(boolean value);
+
 }

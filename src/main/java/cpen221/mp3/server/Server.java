@@ -1,99 +1,47 @@
 package cpen221.mp3.server;
 
-import cpen221.mp3.client.RequestCommand;
-import cpen221.mp3.client.RequestType;
 import cpen221.mp3.entity.Actuator;
 import cpen221.mp3.client.Client;
-import cpen221.mp3.entity.Entity;
-import cpen221.mp3.event.ActuatorEvent;
 import cpen221.mp3.event.Event;
 import cpen221.mp3.client.Request;
 
-import java.io.*;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.ServerSocket;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 public class Server {
     private Client client;
-    private List<Event> eventList;
-    private List<Event> logList;
+    private int clientId;
     private double maxWaitTime = 2; // in seconds
-    private int port;
-    private String ip;
-    private ServerSocket serverSocket;
-    private Filter logFilter;
+
+    private ConcurrentSkipListSet<Event> events = new ConcurrentSkipListSet<>(new Comparator<Event>() {
+        @Override
+        public int compare(Event o1, Event o2) {
+            return o1.getTimeStamp()-o2.getTimeStamp()>0?1:-1;
+        }
+    });
+
+    private ConcurrentSkipListSet<Request> requests = new ConcurrentSkipListSet<>(new Comparator<Request>() {
+        @Override
+        public int compare(Request r1, Request r2) {
+            return r1.getTimeStamp()-r2.getTimeStamp()>0?1:-1;
+        }
+    });
+
+
 
     // you may need to add additional private fields
+
 
     public Server(Client client) {
         // implement the Server constructor
         this.client = client;
-        this.eventList = new ArrayList<>();
-        this.logList = new ArrayList<>();
-        this.port = client.getServerPort();
-        init();
-
-    }
-
-    public void init() {
-        try {
-            serverSocket = new ServerSocket(port);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        try {
-            start();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public void start() throws IOException {
-        while (true) {
-            // block until a client connects
-            final Socket socket = serverSocket.accept();
-            // create a new thread to handle that client
-            Thread handler = new Thread(new Runnable() {
-                public void run() {
-                    try {
-                        try {
-                            handle(socket);
-                        } finally {
-                            socket.close();
-                        }
-                    } catch (IOException ioe) {
-                        // this exception wouldn't terminate serve(),
-                        // since we're now on a different thread, but
-                        // we still need to handle it
-                        ioe.printStackTrace();
-                    }
-                }
-            });
-            // start the thread
-            handler.start();
-        }
-    }
-
-    public void handle(Socket socket) throws IOException {
-        BufferedReader in = new BufferedReader(new InputStreamReader(
-                socket.getInputStream()));
-        Request inRequest = requestDecode(in.read());
-        processIncomingRequest(inRequest);
-    }
-
-    private Request requestDecode(int bytes) {
-        //TODO: implement .toString() decoder
-        return null;
     }
 
     /**
@@ -107,12 +55,12 @@ public class Server {
      */
     public void updateMaxWaitTime(double maxWaitTime) {
         // implement this method
+        this.maxWaitTime = maxWaitTime;
 
         // Important note: updating maxWaitTime may not be as simple as
         // just updating the field. You may need to do some additional
         // work to ensure that events currently being processed are not
         // dropped or ignored by the change in maxWaitTime.
-        this.maxWaitTime = maxWaitTime; //TODO: update this with note
     }
 
     /**
@@ -127,13 +75,20 @@ public class Server {
      */
     public void setActuatorStateIf(Filter filter, Actuator actuator) {
         // implement this method and send the appropriate SeverCommandToActuator as a Request to the actuator
-        if (actuator.getClientId() == client.getClientId()) {
-            if (filter.satisfies(eventList.get(eventList.size()-1))) {
-                Request setState = new Request(RequestType.CONTROL, RequestCommand.CONTROL_SET_ACTUATOR_STATE,
-                        "true");
-                processIncomingEvent(new ActuatorEvent(setState.getTimeStamp(), client.getClientId(),
-                        actuator.getId(), actuator.getType(), true));
-            }
+        if(actuator.getClientId()!=this.clientId){
+            return;
+        }
+        Event event = events.last();
+        if(!filter.satisfies(event)){
+            return;
+        }
+        try {
+            Socket socket = new Socket(actuator.getHost(),actuator.getPort());
+            OutputStream outputStream = socket.getOutputStream();
+            ObjectOutputStream oos = new ObjectOutputStream(outputStream);
+            oos.writeObject(SeverCommandToActuator.SET_STATE);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
     
@@ -150,20 +105,20 @@ public class Server {
      */
     public void toggleActuatorStateIf(Filter filter, Actuator actuator) {
         // implement this method and send the appropriate SeverCommandToActuator as a Request to the actuator
-        boolean checkNoEvent = true;
-        for (Event currentEvent : eventList) {
-            if (currentEvent.getEntityId() == actuator.getId()) {
-                checkNoEvent = false;
-            }
+        if(actuator.getClientId()!=this.clientId){
+            return;
         }
-        if (checkNoEvent) { return; }
-        if (actuator.getClientId() == client.getClientId()) {
-            if (filter.satisfies(eventList.get(eventList.size()-1))) {
-                Request setState = new Request(RequestType.CONTROL, RequestCommand.CONTROL_TOGGLE_ACTUATOR_STATE,
-                        "toggle"); //TODO: Change sent data
-                eventList.add(new ActuatorEvent(setState.getTimeStamp(), client.getClientId(),
-                        actuator.getId(), actuator.getType(), actuator.getState()));
-            }
+        Event event = events.last();
+        if(!filter.satisfies(event)){
+            return;
+        }
+        try {
+            Socket socket = new Socket(actuator.getHost(),actuator.getPort());
+            OutputStream outputStream = socket.getOutputStream();
+            ObjectOutputStream oos = new ObjectOutputStream(outputStream);
+            oos.writeObject(SeverCommandToActuator.TOGGLE_STATE);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -175,11 +130,6 @@ public class Server {
      */
     public void logIf(Filter filter) {
         // implement this method
-        this.logFilter = filter;
-        Event latest = eventList.get(eventList.size()-1);
-        if (filter.satisfies(latest)) {
-            logList.add(latest);
-        }
     }
 
     /**
@@ -188,14 +138,11 @@ public class Server {
      * The list should be sorted in the order of event timestamps.
      * After the logs are read, they should be cleared from the server.
      *
-     * @return list of events' entity IDs
+     * @return list of event IDs 
      */
     public List<Integer> readLogs() {
         // implement this method
-        logList = sortList(logList);
-        return logList.stream()
-                .map(Event::getEntityId)
-                .toList();
+        return null;
     }
 
     /**
@@ -208,13 +155,14 @@ public class Server {
      * @return list of the events for the client in the given time window
      */
     public List<Event> eventsInTimeWindow(TimeWindow timeWindow) {
-        List<Event> eventsInTime = new ArrayList<>();
-        for (Event currentEvent : eventList) {
-            if (timeWindow.startTime <= currentEvent.getTimeStamp() && timeWindow.endTime >= currentEvent.getTimeStamp()) {
-                eventsInTime.add(currentEvent);
+        // implement this method
+        List<Event> eventList = new ArrayList<>();
+        for (Event event : events) {
+            if(event.getTimeStamp()>=timeWindow.getStartTime()&&event.getTimeStamp()<=timeWindow.getEndTime()){
+                eventList.add(event);
             }
         }
-        return eventsInTime;
+        return eventList;
     }
 
      /**
@@ -226,13 +174,11 @@ public class Server {
      */
     public List<Integer> getAllEntities() {
         // implement this method
-        List<Integer> entityList = new ArrayList<>();
-        for (Event currentEvent : eventList) {
-            if (!entityList.contains(currentEvent.getEntityId())) {
-                entityList.add(currentEvent.getEntityId());
-            }
+        List<Integer> list = new ArrayList<>();
+        for (Event event : events) {
+            list.add(event.getEntityId());
         }
-        return entityList;
+        return list;
     }
 
     /**
@@ -248,16 +194,13 @@ public class Server {
      */
     public List<Event> lastNEvents(int n) {
         // implement this method
-        List<Event> sortedEvents = sortList(eventList);
-        return sortedEvents.subList(Math.max(sortedEvents.size() - n, 0), sortedEvents.size());
-    }
-
-    public List<Event> sortList(List<Event> sorting) {
-        List<Event> sortedEvents = sorting.stream()
-                .sorted(Comparator.comparingDouble(Event::getTimeStamp))
-                .collect(Collectors.toList());
-
-        return sortedEvents;
+        ConcurrentSkipListSet<Event> clone = events.clone();
+        List<Event> eventList = new ArrayList<>();
+        for (int i = 0; i < n; i++) {
+            eventList.add(clone.pollLast());
+        }
+        Collections.reverse(eventList);
+        return eventList;
     }
 
     /**
@@ -270,127 +213,47 @@ public class Server {
      */
     public int mostActiveEntity() {
         // implement this method
-        HashMap<Integer, Integer> eventCounts = new HashMap<>();
-        int maxEvents = 0;
-        int activeEntity = 0;
-        for (Event currentEvent : eventList) {
-            int currentId = currentEvent.getEntityId();
-            if (!eventCounts.containsKey(currentId)) {
-                eventCounts.put(currentId, 1);
-            } else {
-                eventCounts.put(currentId, eventCounts.get(currentId)+1);
-            }
-            if (eventCounts.get(currentId) > maxEvents) {
-                activeEntity = currentId;
-                maxEvents = eventCounts.get(currentId);
-            } else if (eventCounts.get(currentId) == maxEvents && currentId > activeEntity) {
-                activeEntity = currentId;
-                maxEvents = eventCounts.get(currentId);
+        HashMap<Integer,Integer> activeMap = new HashMap<>();
+        for (Event event : events) {
+            int entityId = event.getEntityId();
+            if(activeMap.containsKey(entityId)){
+                activeMap.put(entityId,activeMap.get(entityId)+1);
+            }else{
+                activeMap.put(entityId,1);
             }
         }
-        return activeEntity;
+        System.out.println(activeMap);
+        int max = -1;
+        int entityId = -1;
+        for (Integer eid : activeMap.keySet()) {
+            if(activeMap.get(eid)>max){
+                max = activeMap.get(eid);
+                entityId = eid;
+            }else if(activeMap.get(eid)==max){
+                if(eid>entityId){
+                    entityId = eid;
+                }
+            }
+        }
+        return entityId;
     }
 
     /**
-     * The client can ask the server to predict what will be
-     * the next n values  for the next n events
+     * the client can ask the server to predict what will be 
+     * the next n timestamps for the next n events 
      * of the given entity of the client (the entity is identified by its ID).
-     * The values correspond to Event.getValueDouble() or Event.getValueBoolean()
-     * based on the type of the entity. That is why the return type is List<Object>.
-     *
+     * 
      * If the server has not received any events for an entity with that ID,
      * or if that Entity is not registered for the client, then this method should return an empty list.
-     *
+     * 
      * @param entityId the ID of the entity
-     * @param n the number of values to predict
-     * @param alpha smoothing factor for double values (0 < alpha < 1)
-     * @return list of the predicted values
+     * @param n the number of timestamps to predict
+     * @return list of the predicted timestamps
      */
-    public List<Object> predictNextNValues(int entityId, int n, double alpha) {
-        List<Object> predictedValues = new ArrayList<>();
-
-        // Filter events associated with the specified entity ID
-        List<Event> eventsForEntity = eventList.stream()
-                .filter(event -> event.getEntityId() == entityId)
-                .collect(Collectors.toList());
-
-
-        // Determine the type of values associated with the entity
-        if (!eventsForEntity.isEmpty()) {
-            Event sampleEvent = eventsForEntity.get(0); // Sample event to determine the type
-
-            if ("boolean".equals(sampleEvent.getEntityType())) { // Replace "boolean" with the actual type
-                // Predict the next N boolean values using logistic regression
-                List<Boolean> historicalValues = eventsForEntity.stream()
-                        .map(Event::getValueBoolean)
-                        .collect(Collectors.toList());
-
-                predictedValues.addAll(predictNextNBooleanValues(historicalValues, n));
-            } else if ("double".equals(sampleEvent.getEntityType())) { // Replace "double" with the actual type
-                // Predict the next N double values using Exponential Moving Average (EMA)
-                List<Double> historicalValues = eventsForEntity.stream()
-                        .map(Event::getValueDouble)
-                        .collect(Collectors.toList());
-
-                predictedValues.addAll(predictNextNDoubleValues(historicalValues, n, alpha));
-            }
-        }
-
-        return predictedValues;
+    public List<Double> predictNextNTimeStamps(int entityId, int n) {
+        // implement this method
+        return null;
     }
-    /**
-     * Predict the next N double values using Exponential Moving Average (EMA).
-     *
-     * @param historicalValues list of historical double values
-     * @param n the number of values to predict
-     * @param alpha smoothing factor for double values (0 < alpha < 1)
-     * @return list of the predicted double values
-     */
-    private static List<Double> predictNextNDoubleValues(List<Double> historicalValues, int n, double alpha) {
-        List<Double> predictedValues = new ArrayList<>();
-
-        if (!historicalValues.isEmpty()) {
-            double ema = historicalValues.get(historicalValues.size() - 1);
-
-            for (int i = 0; i < n; i++) {
-                // Calculate the next EMA
-                ema = alpha * historicalValues.get(i) + (1 - alpha) * ema;
-
-                // Add the predicted value to the result
-                predictedValues.add(ema);
-            }
-        }
-
-        return predictedValues;
-    }
-
-    /**
-     * Predict the next N boolean values using a simplified version of logistic regression.
-     *
-     * @param historicalValues list of historical boolean values
-     * @param n the number of values to predict
-     * @return list of the predicted boolean values
-     */
-    private static List<Boolean> predictNextNBooleanValues(List<Boolean> historicalValues, int n) {
-        List<Boolean> predictedValues = new ArrayList<>();
-
-        if (!historicalValues.isEmpty()) {
-            // Logistic regression parameters (simplified for illustration)
-            double intercept = 0.0; // Adjust based on your needs
-            double slope = 0.1; // Adjust based on your needs
-
-            for (int i = 0; i < n; i++) {
-                // Apply sigmoid function to predict probability
-                double probability = 1.0 / (1.0 + Math.exp(-(intercept + slope)));
-                boolean prediction = probability > 0.5; // Threshold for binary prediction
-                predictedValues.add(prediction);
-            }
-        }
-
-        return predictedValues;
-    }
-
-
 
     /**
      * the client can ask the server to predict what will be 
@@ -406,47 +269,19 @@ public class Server {
      * @param n the number of double value to predict
      * @return list of the predicted timestamps
      */
-    public List<Object> predictNextNtimestamps(int entityId, int n,double alpha)
-    {
-        List<Object> predictedValues2 = new ArrayList<>();
-
-        // Filter events associated with the specified entity ID
-        List<Event> eventsForEntity2 = eventList.stream()
-                .filter(event -> event.getEntityId() == entityId)
-                .collect(Collectors.toList());
-
-        List<Double> historicalValues2 = eventsForEntity2.stream()
-                .map(Event::getValueDouble)
-                .collect(Collectors.toList());
-
-        if (!historicalValues2.isEmpty())
-        {
-            double ema = historicalValues2.get(eventsForEntity2.size() - 1);
-
-            for (int i = 0; i < n; i++) {
-                // Calculate the next EMA
-                ema = alpha * historicalValues2.get(i) + (1 - alpha) * ema;
-
-                // Add the predicted value to the result
-                predictedValues2.add(ema);
-            }
-
-        } return predictedValues2;
-    }
-
-    void processIncomingEvent(Event event) {
-        eventList.add(event);
-        eventList = sortList(eventList);
-
-    }
-
-    void processIncomingRequest(Request request) {
+    public List<Object> predictNextNValues(int entityId, int n) {
         // implement this method
-       switch (request.getRequestType()) {
-           case CONFIG: switch (request.getRequestCommand()) {
-               case CONFIG_UPDATE_MAX_WAIT_TIME: updateMaxWaitTime(Integer.parseInt(request.getRequestData()));
-           }
-       }
+        return null;
+    }
 
+
+    public void processIncomingEvent(Event event) {
+        // implement this method
+        events.add(event);
+    }
+
+    public void processIncomingRequest(Request request) {
+        // implement this method
+        requests.add(request);
     }
 }

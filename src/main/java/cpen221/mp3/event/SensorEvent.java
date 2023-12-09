@@ -1,6 +1,6 @@
 package cpen221.mp3.event;
 
-public class SensorEvent implements Event {
+public class SensorEvent implements Event,Cloneable {
     // TODO: Implement this class
     // you can add private fields and methods to this class
     private double timeStamp;
@@ -10,16 +10,24 @@ public class SensorEvent implements Event {
     private double value;
 
     public SensorEvent(double TimeStamp,
-                       int ClientId,
-                       int EntityId,
-                       String EntityType,
-                       double Value) {
+                        int ClientId,
+                        int EntityId, 
+                        String EntityType, 
+                        double Value) {
         // Implement this constructor
         this.timeStamp = TimeStamp;
         this.clientId = ClientId;
         this.entityId = EntityId;
         this.entityType = EntityType;
         this.value = Value;
+    }
+
+    public SensorEvent clone(){
+        try {
+            return (SensorEvent) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public double getTimeStamp() {
@@ -64,16 +72,18 @@ public class SensorEvent implements Event {
     }
 
     @Override
-    public void setValueBoolean(boolean value) { }
+    public void setValueBoolean(boolean value) {
+
+    }
 
     @Override
     public String toString() {
         return "SensorEvent{" +
-                "TimeStamp=" + getTimeStamp() +
-                ",ClientId=" + getClientId() +
-                ",EntityId=" + getEntityId() +
-                ",EntityType=" + getEntityType() +
-                ",Value=" + getValueDouble() +
-                '}';
+               "TimeStamp=" + getTimeStamp() +
+               ",ClientId=" + getClientId() + 
+               ",EntityId=" + getEntityId() +
+               ",EntityType=" + getEntityType() + 
+               ",Value=" + getValueDouble() + 
+               '}';
     }
 }
