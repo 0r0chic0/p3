@@ -16,7 +16,6 @@ public class Client {
 
     private Socket socket;
 
-    // you would need additional fields to enable functionalities required for this class
 
 
     public Client(int clientId, String email, String serverIP, int serverPort) {
@@ -36,7 +35,7 @@ public class Client {
      * @return true if the entity is new and gets successfully registered, false if the Entity is already registered
      */
     public boolean addEntity(Entity entity) {
-        // implement this method
+
         if(entity.getClientId()==-1){
             entity.registerForClient(this.clientId);
             return true;
@@ -51,8 +50,7 @@ public class Client {
 
     // sends a request to the server
     public void sendRequest(Request request) {
-        // implement this method
-        // note that Request is a complex object that you need to serialize before sending
+
         if(socket == null){
             try {
                 socket = new Socket(serverIP,serverPort);

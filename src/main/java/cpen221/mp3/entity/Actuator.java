@@ -169,22 +169,18 @@ public class Actuator implements Entity{
      * @param frequency the frequency of event generation in Hz (1/s)
      */
     public void setEventGenerationFrequency(double frequency) {
-        // implement this method
         if (frequency > 0) {
             this.eventGenerationFrequency = frequency;
         }
     }
 
     public void sendEvent(Event event) {
-        // implement this method
-        // note that Event is a complex object that you need to serialize before sending
 
         if (serverIP == null || serverIP.equals("") || serverPort == 0) {
             return;
         }
         int times = 0;
-        // implement this method
-        // note that Event is a complex object that you need to serialize before sending
+
         OutputStream os = null;
         ObjectOutputStream oos = null;
         try {
@@ -248,5 +244,5 @@ public class Actuator implements Entity{
                 '}';
     }
 
-    // you will most likely need additional helper methods for this class
+
 }

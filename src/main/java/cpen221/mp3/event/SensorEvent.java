@@ -1,8 +1,7 @@
 package cpen221.mp3.event;
 
 public class SensorEvent implements Event,Cloneable {
-    // TODO: Implement this class
-    // you can add private fields and methods to this class
+
     private double timeStamp;
     private int clientId;
     private int entityId;
@@ -60,8 +59,6 @@ public class SensorEvent implements Event,Cloneable {
         return value;
     }
 
-    // Sensor events do not have a boolean value
-    // no need to implement this method
     public boolean getValueBoolean() {
         return false;
     }

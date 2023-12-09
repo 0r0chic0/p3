@@ -44,9 +44,6 @@ public class Server {
     });
 
 
-    // you may need to add additional private fields
-
-
     public Server(Client client) {
         // implement the Server constructor
         this.client = client;
@@ -62,27 +59,22 @@ public class Server {
      * @param maxWaitTime the new max wait time
      */
     public void updateMaxWaitTime(double maxWaitTime) {
-        // implement this method
         this.maxWaitTime = maxWaitTime;
 
-        // Important note: updating maxWaitTime may not be as simple as
-        // just updating the field. You may need to do some additional
-        // work to ensure that events currently being processed are not
-        // dropped or ignored by the change in maxWaitTime.
     }
 
     /**
      * Set the actuator state if the given filter is satisfied by the latest event.
-     * Here the latest event is the event with the latest timestamp not the event 
+     * Here the latest event is the event with the latest timestamp not the event
      * that was received by the server the latest.
      *
      * If the actuator is not registered for the client, then this method should do nothing.
-     * 
+     *
      * @param filter the filter to check
      * @param actuator the actuator to set the state of as true
      */
     public void setActuatorStateIf(Filter filter, Actuator actuator) {
-        // implement this method and send the appropriate SeverCommandToActuator as a Request to the actuator
+
         if(actuator.getClientId()!=this.clientId){
             return;
         }
@@ -99,12 +91,12 @@ public class Server {
             throw new RuntimeException(e);
         }
     }
-    
+
     /**
      * Toggle the actuator state if the given filter is satisfied by the latest event.
-     * Here the latest event is the event with the latest timestamp not the event 
+     * Here the latest event is the event with the latest timestamp not the event
      * that was received by the server the latest.
-     * 
+     *
      * If the actuator has never sent an event to the server, then this method should do nothing.
      * If the actuator is not registered for the client, then this method should do nothing.
      *
@@ -112,7 +104,7 @@ public class Server {
      * @param actuator the actuator to toggle the state of (true -> false, false -> true)
      */
     public void toggleActuatorStateIf(Filter filter, Actuator actuator) {
-        // implement this method and send the appropriate SeverCommandToActuator as a Request to the actuator
+
         if(actuator.getClientId()!=this.clientId){
             return;
         }
@@ -151,7 +143,7 @@ public class Server {
      * The list should be sorted in the order of event timestamps.
      * After the logs are read, they should be cleared from the server.
      *
-     * @return list of event IDs 
+     * @return list of event IDs
      */
     public List<Integer> readLogs() {
         return logList.stream()
@@ -161,7 +153,7 @@ public class Server {
 
     /**
      * List all the events of the client that occurred in the given time window.
-     * Here the timestamp of an event is the time at which the event occurred, not 
+     * Here the timestamp of an event is the time at which the event occurred, not
      * the time at which the event was received by the server.
      * If no events occurred in the given time window, then this method should return an empty list.
      *
@@ -179,11 +171,11 @@ public class Server {
         return eventList;
     }
 
-     /**
-     * Returns a set of IDs for all the entities of the client for which 
+    /**
+     * Returns a set of IDs for all the entities of the client for which
      * we have received events so far.
      * Returns an empty list if no events have been received for the client.
-     * 
+     *
      * @return list of all the entities of the client for which we have received events so far
      */
     public List<Integer> getAllEntities() {
@@ -207,7 +199,7 @@ public class Server {
      * @return list of the latest n events of the client
      */
     public List<Event> lastNEvents(int n) {
-        // implement this method
+
         ConcurrentSkipListSet<Event> clone = events.clone();
         List<Event> eventList = new ArrayList<>();
         for (int i = 0; i < n; i++) {
@@ -222,11 +214,10 @@ public class Server {
      * in terms of the number of events it has generated.
      *
      * If there was a tie, then this method should return the largest ID.
-     * 
+     *
      * @return the most active entity ID of the client
      */
     public int mostActiveEntity() {
-        // implement this method
         HashMap<Integer,Integer> activeMap = new HashMap<>();
         for (Event event : events) {
             int entityId = event.getEntityId();
@@ -253,13 +244,13 @@ public class Server {
     }
 
     /**
-     * the client can ask the server to predict what will be 
-     * the next n timestamps for the next n events 
+     * the client can ask the server to predict what will be
+     * the next n timestamps for the next n events
      * of the given entity of the client (the entity is identified by its ID).
-     * 
+     *
      * If the server has not received any events for an entity with that ID,
      * or if that Entity is not registered for the client, then this method should return an empty list.
-     * 
+     *
      * @param entityId the ID of the entity
      * @param n the number of timestamps to predict
      * @return list of the predicted timestamps
@@ -394,12 +385,12 @@ public class Server {
 
 
     public void processIncomingEvent(Event event) {
-        // implement this method
+
         events.add(event);
     }
 
     public void processIncomingRequest(Request request) {
-        // implement this method
+
         requests.add(request);
     }
 }

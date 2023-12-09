@@ -11,15 +11,11 @@ public class MessageHandler {
 
     private Server server;
 
-    // you may need to add additional private fields and methods to this class
-
     public MessageHandler(int port) {
         this.port = port;
     }
 
     public void start() {
-        // the following is just to get you started
-        // you may need to change it to fit your implementation
         try {
             serverSocket = new ServerSocket(port);
             System.out.println("Server started on port " + port);
@@ -36,8 +32,6 @@ public class MessageHandler {
     }
 
     public static void main(String[] args) {
-        // you would need to initialize the RequestHandler with the port number
-        // and then start it here
         MessageHandler handler = new MessageHandler(8888);
         handler.start();
     }

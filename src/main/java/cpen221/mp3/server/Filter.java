@@ -19,7 +19,6 @@ enum BooleanOperator {
 }
 
 public class Filter {
-    // you can add private fields and methods to this class
     private BooleanOperator booleanOperator;
     private boolean booleanValue;
     private String field;

@@ -1,8 +1,6 @@
 package cpen221.mp3.event;
 
 public class ActuatorEvent implements Event,Cloneable {
-    // TODO: Implement this class
-    // you can add private fields and methods to this class
     private double timeStamp;
     private int clientId;
     private int entityId;
@@ -13,7 +11,7 @@ public class ActuatorEvent implements Event,Cloneable {
                         int EntityId, 
                         String EntityType, 
                         boolean Value) {
-        // Implement this constructor
+
         this.timeStamp = TimeStamp;
         this.clientId = ClientId;
         this.entityId = EntityId;
@@ -69,8 +67,6 @@ public class ActuatorEvent implements Event,Cloneable {
          this.value = value;
     }
 
-    // Actuator events do not have a double value
-    // no need to implement this method
     public double getValueDouble() {
         return -1;
     }
