@@ -182,7 +182,7 @@ public class Actuator implements Entity{
         if (serverIP == null || serverIP.equals("") || serverPort == 0) {
             return;
         }
-        int times = 0;//记录错误次数
+        int times = 0;
         // implement this method
         // note that Event is a complex object that you need to serialize before sending
         OutputStream os = null;
@@ -194,7 +194,7 @@ public class Actuator implements Entity{
         } catch (IOException e) {
             e.printStackTrace();
         }
-        //这里不断发送消息即可
+
         while (true) {
             try {
                 if (times == 5) {

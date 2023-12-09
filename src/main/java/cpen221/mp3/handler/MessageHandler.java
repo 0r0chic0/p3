@@ -9,7 +9,7 @@ public class MessageHandler {
     private ServerSocket serverSocket;
     private int port;
 
-    private Server server;//一个客户端对应一台服务器
+    private Server server;
 
     // you may need to add additional private fields and methods to this class
 

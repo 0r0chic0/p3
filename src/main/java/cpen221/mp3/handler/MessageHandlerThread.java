@@ -39,28 +39,28 @@ class MessageHandlerThread implements Runnable {
             Object o = ois.readObject();
             if(o instanceof Event){
                 int clientId = ((Event) o).getClientId();
-                Server server = serverMap.get(clientId);//看这个客户端对应的服务器是否已经创建
+                Server server = serverMap.get(clientId);
                 Client client = null;
                 if(server==null){
-                    //创建一个服务器对应客户端
+
                     client = new Client(clientId,"",incomingSocket.getLocalAddress().getHostAddress(),incomingSocket.getLocalPort());
                     server = new Server(client);
                 }
-                //如果是事件，则代表是传感器或者执行器发送的，在这里构造一个传感器或执行器
+
                 if(o instanceof SensorEvent){
-                    //传感器
+
                     SensorEvent se = (SensorEvent)o;
                     int entityId = se.getEntityId();
-                    //如果这个id已经存在就不管，如果不存在就创建一个
+
                     if(!isExists(server,entityId)){
                         Sensor sensor = new Sensor(se.getEntityId(),se.getClientId(),se.getEntityType(),incomingSocket.getLocalAddress().getHostAddress(),incomingSocket.getLocalPort());
                         sensor.setSocket(incomingSocket);
                     }
                 }else{
-                    //执行器
+
                     ActuatorEvent se = (ActuatorEvent) o;
                     int entityId = se.getEntityId();
-                    //如果这个id已经存在就不管，如果不存在就创建一个
+
                     if(!isExists(server,entityId)){
                         Actuator actuator = new Actuator(se.getEntityId(),se.getClientId(),se.getEntityType(),false,incomingSocket.getLocalAddress().getHostAddress(),incomingSocket.getLocalPort());
                         actuator.setSocket(incomingSocket);

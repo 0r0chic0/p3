@@ -105,14 +105,14 @@ public class Filter {
                 return true;
             }
         }else if(this.booleanOperator!=null){
-            //处理boolean的过滤
+
             if(this.booleanOperator==BooleanOperator.EQUALS){
                 return booleanValue==event.getValueBoolean();
             }else{
                 return booleanValue!=event.getValueBoolean();
             }
         }else{
-            //处理double值的过滤
+
             if(field.equals("value")){
                 if(doubleOperator==DoubleOperator.EQUALS){
                      return doubleValue==event.getValueDouble();
