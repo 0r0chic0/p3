@@ -14,6 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.stream.Collectors;
 
 public class Server {
     private Client client;
@@ -33,7 +34,14 @@ public class Server {
             return r1.getTimeStamp()-r2.getTimeStamp()>0?1:-1;
         }
     });
+    private Filter logFilter;
 
+    private ConcurrentSkipListSet<Event> logList = new ConcurrentSkipListSet<>(new Comparator<Event>() {
+        @Override
+        public int compare(Event e1, Event e2) {
+            return e1.getTimeStamp()-e2.getTimeStamp()>0?1:-1;
+        }
+    });
 
 
     // you may need to add additional private fields
@@ -130,6 +138,11 @@ public class Server {
      */
     public void logIf(Filter filter) {
         // implement this method
+        this.logFilter = filter;
+        Event latest = events.last();
+        if (filter.satisfies(latest)) {
+            logList.add(latest);
+        }
     }
 
     /**
@@ -141,8 +154,9 @@ public class Server {
      * @return list of event IDs 
      */
     public List<Integer> readLogs() {
-        // implement this method
-        return null;
+        return logList.stream()
+                .map(Event::getEntityId)
+                .collect(Collectors.toList());
     }
 
     /**
@@ -250,28 +264,132 @@ public class Server {
      * @param n the number of timestamps to predict
      * @return list of the predicted timestamps
      */
-    public List<Double> predictNextNTimeStamps(int entityId, int n) {
-        // implement this method
-        return null;
+    public List<Object> predictNextNValues(int entityId, int n, double alpha) {
+        List<Object> predictedValues = new ArrayList<>();
+
+        // Filter events associated with the specified entity ID
+        List<Event> eventsForEntity = events.stream()
+                .filter(event -> event.getEntityId() == entityId)
+                .collect(Collectors.toList());
+
+
+        // Determine the type of values associated with the entity
+        if (!eventsForEntity.isEmpty()) {
+            Event sampleEvent = eventsForEntity.get(0); // Sample event to determine the type
+
+            if ("boolean".equals(sampleEvent.getEntityType())) { // Replace "boolean" with the actual type
+                // Predict the next N boolean values using logistic regression
+                List<Boolean> historicalValues = eventsForEntity.stream()
+                        .map(Event::getValueBoolean)
+                        .collect(Collectors.toList());
+
+                predictedValues.addAll(predictNextNBooleanValues(historicalValues, n));
+            } else if ("double".equals(sampleEvent.getEntityType())) { // Replace "double" with the actual type
+                // Predict the next N double values using Exponential Moving Average (EMA)
+                List<Double> historicalValues = eventsForEntity.stream()
+                        .map(Event::getValueDouble)
+                        .collect(Collectors.toList());
+
+                predictedValues.addAll(predictNextNDoubleValues(historicalValues, n, alpha));
+            }
+        }
+
+        return predictedValues;
+    }
+    /**
+     * Predict the next N double values using Exponential Moving Average (EMA).
+     *
+     * @param historicalValues list of historical double values
+     * @param n the number of values to predict
+     * @param alpha smoothing factor for double values (0 < alpha < 1)
+     * @return list of the predicted double values
+     */
+    private static List<Double> predictNextNDoubleValues(List<Double> historicalValues, int n, double alpha) {
+        List<Double> predictedValues = new ArrayList<>();
+
+        if (!historicalValues.isEmpty()) {
+            double ema = historicalValues.get(historicalValues.size() - 1);
+
+            for (int i = 0; i < n; i++) {
+                // Calculate the next EMA
+                ema = alpha * historicalValues.get(i) + (1 - alpha) * ema;
+
+                // Add the predicted value to the result
+                predictedValues.add(ema);
+            }
+        }
+
+        return predictedValues;
     }
 
     /**
-     * the client can ask the server to predict what will be 
+     * Predict the next N boolean values using a simplified version of logistic regression.
+     *
+     * @param historicalValues list of historical boolean values
+     * @param n the number of values to predict
+     * @return list of the predicted boolean values
+     */
+    private static List<Boolean> predictNextNBooleanValues(List<Boolean> historicalValues, int n) {
+        List<Boolean> predictedValues = new ArrayList<>();
+
+        if (!historicalValues.isEmpty()) {
+            // Logistic regression parameters (simplified for illustration)
+            double intercept = 0.0; // Adjust based on your needs
+            double slope = 0.1; // Adjust based on your needs
+
+            for (int i = 0; i < n; i++) {
+                // Apply sigmoid function to predict probability
+                double probability = 1.0 / (1.0 + Math.exp(-(intercept + slope)));
+                boolean prediction = probability > 0.5; // Threshold for binary prediction
+                predictedValues.add(prediction);
+            }
+        }
+
+        return predictedValues;
+    }
+
+
+
+    /**
+     * the client can ask the server to predict what will be
      * the next n values of the timestamps for the next n events
      * of the given entity of the client (the entity is identified by its ID).
-     * The values correspond to Event.getValueDouble() or Event.getValueBoolean() 
+     * The values correspond to Event.getValueDouble() or Event.getValueBoolean()
      * based on the type of the entity. That is why the return type is List<Object>.
-     * 
+     *
      * If the server has not received any events for an entity with that ID,
      * or if that Entity is not registered for the client, then this method should return an empty list.
-     * 
+     *
      * @param entityId the ID of the entity
      * @param n the number of double value to predict
      * @return list of the predicted timestamps
      */
-    public List<Object> predictNextNValues(int entityId, int n) {
-        // implement this method
-        return null;
+    public List<Object> predictNextNtimestamps(int entityId, int n,double alpha)
+    {
+        List<Object> predictedValues2 = new ArrayList<>();
+
+        // Filter events associated with the specified entity ID
+        List<Event> eventsForEntity2 = events.stream()
+                .filter(event -> event.getEntityId() == entityId)
+                .collect(Collectors.toList());
+
+        List<Double> historicalValues2 = eventsForEntity2.stream()
+                .map(Event::getValueDouble)
+                .collect(Collectors.toList());
+
+        if (!historicalValues2.isEmpty())
+        {
+            double ema = historicalValues2.get(eventsForEntity2.size() - 1);
+
+            for (int i = 0; i < n; i++) {
+                // Calculate the next EMA
+                ema = alpha * historicalValues2.get(i) + (1 - alpha) * ema;
+
+                // Add the predicted value to the result
+                predictedValues2.add(ema);
+            }
+
+        } return predictedValues2;
     }
 
 
