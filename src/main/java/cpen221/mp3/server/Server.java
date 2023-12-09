@@ -75,11 +75,11 @@ public class Server {
      */
     public void setActuatorStateIf(Filter filter, Actuator actuator) {
 
-        if(actuator.getClientId()!=this.clientId){
+        if (actuator.getClientId()!=this.clientId) {
             return;
         }
         Event event = events.last();
-        if(!filter.satisfies(event)){
+        if (!filter.satisfies(event)) {
             return;
         }
         try {
@@ -105,11 +105,11 @@ public class Server {
      */
     public void toggleActuatorStateIf(Filter filter, Actuator actuator) {
 
-        if(actuator.getClientId()!=this.clientId){
+        if (actuator.getClientId()!=this.clientId){
             return;
         }
         Event event = events.last();
-        if(!filter.satisfies(event)){
+        if (!filter.satisfies(event)) {
             return;
         }
         try {
@@ -161,10 +161,9 @@ public class Server {
      * @return list of the events for the client in the given time window
      */
     public List<Event> eventsInTimeWindow(TimeWindow timeWindow) {
-        // implement this method
         List<Event> eventList = new ArrayList<>();
         for (Event event : events) {
-            if(event.getTimeStamp()>=timeWindow.getStartTime()&&event.getTimeStamp()<=timeWindow.getEndTime()){
+            if(event.getTimeStamp() >= timeWindow.getStartTime() && event.getTimeStamp()<=timeWindow.getEndTime()) {
                 eventList.add(event);
             }
         }
@@ -199,7 +198,6 @@ public class Server {
      * @return list of the latest n events of the client
      */
     public List<Event> lastNEvents(int n) {
-
         ConcurrentSkipListSet<Event> clone = events.clone();
         List<Event> eventList = new ArrayList<>();
         for (int i = 0; i < n; i++) {
@@ -221,9 +219,9 @@ public class Server {
         HashMap<Integer,Integer> activeMap = new HashMap<>();
         for (Event event : events) {
             int entityId = event.getEntityId();
-            if(activeMap.containsKey(entityId)){
+            if (activeMap.containsKey(entityId)) {
                 activeMap.put(entityId,activeMap.get(entityId)+1);
-            }else{
+            } else {
                 activeMap.put(entityId,1);
             }
         }
@@ -231,11 +229,11 @@ public class Server {
         int max = -1;
         int entityId = -1;
         for (Integer eid : activeMap.keySet()) {
-            if(activeMap.get(eid)>max){
+            if (activeMap.get(eid)>max) {
                 max = activeMap.get(eid);
                 entityId = eid;
-            }else if(activeMap.get(eid)==max){
-                if(eid>entityId){
+            } else if (activeMap.get(eid)==max) {
+                if (eid>entityId) {
                     entityId = eid;
                 }
             }
@@ -284,7 +282,6 @@ public class Server {
                 predictedValues.addAll(predictNextNDoubleValues(historicalValues, n, alpha));
             }
         }
-
         return predictedValues;
     }
     /**
@@ -385,12 +382,10 @@ public class Server {
 
 
     public void processIncomingEvent(Event event) {
-
         events.add(event);
     }
 
     public void processIncomingRequest(Request request) {
-
         requests.add(request);
     }
 }

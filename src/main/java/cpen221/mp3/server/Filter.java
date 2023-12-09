@@ -41,7 +41,6 @@ public class Filter {
      * @param value the boolean value to match
      */
     public Filter(BooleanOperator operator, boolean value) {
-        // TODO: implement this method
         this.booleanOperator = operator;
         this.booleanValue = value;
     }
@@ -67,10 +66,9 @@ public class Filter {
      * @throws IllegalArgumentException if the given field is not "value" or "timestamp"
      */
     public Filter(String field, DoubleOperator operator, double value) {
-        // TODO: implement this method
-        if(field.equals("value")||field.equals("timestamp")){
+        if (field.equals("value")||field.equals("timestamp")) {
             this.field = field;
-        }else{
+        } else {
             throw new IllegalArgumentException();
         }
         this.doubleOperator = operator;
@@ -84,7 +82,6 @@ public class Filter {
      * @param filters the list of filters to use in the composition
      */
     public Filter(List<Filter> filters) {
-        // TODO: implement this method
         this.filters = filters;
     }
 
@@ -95,47 +92,37 @@ public class Filter {
      * @return true if the event satisfies the filter criteria, false otherwise
      */
     public boolean satisfies(Event event) {
-        // TODO: implement this method
-        if(filters!=null){
+        if (filters != null) {
             for (Filter filter : filters) {
-                if(!filter.satisfies(event)){
+                if (!filter.satisfies(event)){
                     return false;
                 }
                 return true;
             }
-        }else if(this.booleanOperator!=null){
+        } else if (this.booleanOperator!=null) {
 
-            if(this.booleanOperator==BooleanOperator.EQUALS){
-                return booleanValue==event.getValueBoolean();
-            }else{
-                return booleanValue!=event.getValueBoolean();
+            if (this.booleanOperator == BooleanOperator.EQUALS) {
+                return booleanValue == event.getValueBoolean();
+            } else {
+                return booleanValue != event.getValueBoolean();
             }
-        }else{
-
-            if(field.equals("value")){
-                if(doubleOperator==DoubleOperator.EQUALS){
-                     return doubleValue==event.getValueDouble();
-                }else if(doubleOperator==DoubleOperator.GREATER_THAN){
-                    return doubleValue<event.getValueDouble();
-                }else if(doubleOperator==DoubleOperator.LESS_THAN){
-                    return doubleValue>event.getValueDouble();
-                }else if(doubleOperator==DoubleOperator.GREATER_THAN_OR_EQUALS){
-                    return event.getValueDouble()>=doubleValue;
-                }else if(doubleOperator==DoubleOperator.LESS_THAN_OR_EQUALS){
-                    return event.getValueDouble()<=doubleValue;
-                }
-            }else{
-                if(doubleOperator==DoubleOperator.EQUALS){
-                    return doubleValue==event.getTimeStamp();
-                }else if(doubleOperator==DoubleOperator.GREATER_THAN){
-                    return doubleValue<event.getTimeStamp();
-                }else if(doubleOperator==DoubleOperator.LESS_THAN){
-                    return doubleValue>event.getTimeStamp();
-                }else if(doubleOperator==DoubleOperator.GREATER_THAN_OR_EQUALS){
-                    return event.getTimeStamp()>=doubleValue;
-                }else if(doubleOperator==DoubleOperator.LESS_THAN_OR_EQUALS){
-                    return event.getTimeStamp()<=doubleValue;
-                }
+        } else {
+            if (field.equals("value")) {
+                return switch (doubleOperator) {
+                    case EQUALS -> doubleValue == event.getValueDouble();
+                    case GREATER_THAN -> doubleValue < event.getValueDouble();
+                    case LESS_THAN -> doubleValue > event.getValueDouble();
+                    case GREATER_THAN_OR_EQUALS -> event.getValueDouble() >= doubleValue;
+                    case LESS_THAN_OR_EQUALS -> event.getValueDouble() <= doubleValue;
+                };
+            } else {
+                return switch (doubleOperator) {
+                    case EQUALS -> doubleValue == event.getTimeStamp();
+                    case GREATER_THAN -> doubleValue < event.getTimeStamp();
+                    case LESS_THAN -> doubleValue > event.getTimeStamp();
+                    case GREATER_THAN_OR_EQUALS -> event.getTimeStamp() >= doubleValue;
+                    case LESS_THAN_OR_EQUALS -> event.getTimeStamp() <= doubleValue;
+                };
             }
         }
         return false;
@@ -148,9 +135,8 @@ public class Filter {
      * @return true if every event in the list satisfies the filter criteria, false otherwise
      */
     public boolean satisfies(List<Event> events) {
-        // TODO: implement this method
         for (Event event : events) {
-           if(!satisfies(event)){
+           if (!satisfies(event)) {
                return false;
            }
         }
@@ -165,8 +151,7 @@ public class Filter {
      * @return a new event if it satisfies the filter criteria, null otherwise
      */
     public Event sift(Event event) {
-        // TODO: implement this method
-        if(satisfies(event)){
+        if (satisfies(event)) {
             return event;
         }
         return null;
@@ -181,10 +166,9 @@ public class Filter {
      *        or an empty list if no events in the given list satisfy the filter criteria
      */
     public List<Event> sift(List<Event> events) {
-        // TODO: implement this method
         ArrayList<Event> evs = new ArrayList<>();
         for (Event event : events) {
-            if(satisfies(event)){
+            if (satisfies(event)) {
                 evs.add(event);
             }
         }
