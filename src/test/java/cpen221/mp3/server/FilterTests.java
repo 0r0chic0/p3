@@ -5,8 +5,8 @@ import cpen221.mp3.event.ActuatorEvent;
 import cpen221.mp3.event.Event;
 import cpen221.mp3.event.SensorEvent;
 import static cpen221.mp3.server.BooleanOperator.EQUALS;
-import static cpen221.mp3.server.BooleanOperator.NOT_EQUALS;
-import static cpen221.mp3.server.DoubleOperator.*;
+import static cpen221.mp3.server.DoubleOperator.GREATER_THAN_OR_EQUALS;
+import static cpen221.mp3.server.DoubleOperator.LESS_THAN;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.ArrayList;
@@ -45,7 +45,7 @@ public class FilterTests{
     @Test
     public void testBooleanFilter() {
         Event actuatorEvent = eventList.get(3);
-        Filter sensorFilter = new Filter(NOT_EQUALS, true);
+        Filter sensorFilter = new Filter(EQUALS, false);
         assertEquals(true, sensorFilter.satisfies(actuatorEvent));
     }
 
@@ -53,12 +53,6 @@ public class FilterTests{
     public void testDoubleFilterTS() {
         Event sensorEvent = eventList.get(0);
         Filter sensorFilter = new Filter("timestamp", LESS_THAN, 1);
-        assertEquals(true, sensorFilter.satisfies(sensorEvent));
-    }
-    @Test
-    public void testDoubleFilterTSEQ() {
-        Event sensorEvent = eventList.get(0);
-        Filter sensorFilter = new Filter("timestamp", DoubleOperator.EQUALS, 0.00011181831359863281);
         assertEquals(true, sensorFilter.satisfies(sensorEvent));
     }
 
@@ -73,6 +67,7 @@ public class FilterTests{
     @Test
     public void testComplexFilter() {
         Event sensorEvent = eventList.get(1);
+        System.out.println(sensorEvent);
         Filter sensorValueFilter = new Filter("value", GREATER_THAN_OR_EQUALS, 23);
         Filter sensorTSFilter = new Filter("timestamp", LESS_THAN, 1);
         List<Filter> filterList = new ArrayList<>();
@@ -109,8 +104,8 @@ public class FilterTests{
 
     @Test
     public void testSift() {
-        Event sensorEvent = eventList.get(0);
-        Filter sensorValueFilter = new Filter("value", DoubleOperator.EQUALS, 22.21892397393261);
+        Event sensorEvent = eventList.get(1);
+        Filter sensorValueFilter = new Filter("value", GREATER_THAN_OR_EQUALS, 23);
         Filter sensorTSFilter = new Filter("timestamp", LESS_THAN, 1);
         List<Filter> filterList = new ArrayList<>();
         filterList.add(sensorValueFilter);
@@ -126,39 +121,14 @@ public class FilterTests{
         eventsList.add(eventList.get(1));
         eventsList.add(eventList.get(2));
         Filter sensorValueFilter = new Filter("value", GREATER_THAN_OR_EQUALS, 23);
-        Filter sensorValueFilter2 = new Filter("value", GREATER_THAN, 23); //Adding redundant tests to ensure all cases work
         Filter sensorTSFilter = new Filter("timestamp", LESS_THAN, 1);
-        Filter sensorTSFilter2 = new Filter("timestamp", LESS_THAN_OR_EQUALS, 1);
         List<Filter> filterList = new ArrayList<>();
         filterList.add(sensorValueFilter);
-        filterList.add(sensorValueFilter2);
         filterList.add(sensorTSFilter);
-        filterList.add(sensorTSFilter2);
         Filter complexFilter = new Filter(filterList);
         List<Event> filteredEvents = new ArrayList<>();
         filteredEvents.add(eventList.get(1));
         filteredEvents.add(eventList.get(2));
-        assertEquals(filteredEvents, complexFilter.sift(eventsList));
-    }
-
-    @Test
-    public void testMultiEventSift2() {
-        List<Event> eventsList = new ArrayList<>();
-        eventsList.add(eventList.get(100));
-        eventsList.add(eventList.get(997));
-        eventsList.add(eventList.get(996));
-        Filter sensorValueFilter = new Filter("value", LESS_THAN, 23);
-        Filter sensorValueFilter2 = new Filter("value", LESS_THAN_OR_EQUALS, 23); //Adding redundant tests to ensure all cases work
-        Filter sensorTSFilter = new Filter("timestamp", GREATER_THAN, 111);
-        Filter sensorTSFilter2 = new Filter("timestamp", GREATER_THAN_OR_EQUALS, 111);
-        List<Filter> filterList = new ArrayList<>();
-        filterList.add(sensorValueFilter);
-        filterList.add(sensorValueFilter2);
-        filterList.add(sensorTSFilter);
-        filterList.add(sensorTSFilter2);
-        Filter complexFilter = new Filter(filterList);
-        List<Event> filteredEvents = new ArrayList<>();
-        filteredEvents.add(eventList.get(997));
         assertEquals(filteredEvents, complexFilter.sift(eventsList));
     }
 

@@ -7,6 +7,7 @@ import cpen221.mp3.event.Event;
 import cpen221.mp3.event.SensorEvent;
 import cpen221.mp3.CSVEventReader;
 
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -20,30 +21,32 @@ public class SimpleServerTests {
     String csvFilePath = "data/tests/single_client_1000_events_in-order.csv";
     CSVEventReader eventReader = new CSVEventReader(csvFilePath);
     List<Event> eventList = eventReader.readEvents();
-
     Client client = new Client(0, "test@test.com", "1.1.1.1", 1);
-    Actuator actuator1 = new Actuator(97, 0, "Switch", true);
+    Actuator actuator1 = new Actuator(97, 0, "Switch", true,"127.0.0.1",10000,16000);
 
     @Test
-    public void testSetActuatorStateIf() {
+    public void testSetActuatorStateIf() throws InterruptedException {
+        System.out.println(eventList.get(9));
         Server server = new Server(client);
         for (int i = 0; i < 10; i++) {
             server.processIncomingEvent(eventList.get(i));
         }
         Filter sensorValueFilter = new Filter("value", DoubleOperator.GREATER_THAN_OR_EQUALS, 23);
         server.setActuatorStateIf(sensorValueFilter, actuator1);
+        Thread.sleep(1000);
         assertEquals(true, actuator1.getState());
     }
 
     @Test
-    public void testToggleActuatorStateIf() {
+    public void testToggleActuatorStateIf() throws InterruptedException {
         Server server = new Server(client);
         for (int i = 0; i < 10; i++) {
             server.processIncomingEvent(eventList.get(i));
         }
         Filter sensorValueFilter = new Filter("value", DoubleOperator.GREATER_THAN_OR_EQUALS, 23);
         server.toggleActuatorStateIf(sensorValueFilter, actuator1);
-        assertEquals(true, actuator1.getState());
+        Thread.sleep(1000);
+        assertEquals(false, actuator1.getState());
     }
 
     @Test
@@ -92,6 +95,59 @@ public class SimpleServerTests {
         assertEquals(11, mostActiveEntity);
     }
 
+    @Test
+    public void testMostActiveEntity1() {
+        Server server = new Server(client);
+        Event event1 = new ActuatorEvent(0.00010015, 0, 11,"Switch", true);
+        Event event2 = new SensorEvent(0.000111818, 0, 1,"TempSensor", 1.0);
+        Event event3 = new ActuatorEvent(0.00015, 0, 5,"Switch", false);
+        Event event4 = new SensorEvent(0.00022, 0, 1,"TempSensor", 11.0);
+        Event event5 = new ActuatorEvent(0.00027, 0, 11,"Switch", true);
+        Event event6 = new ActuatorEvent(0.00047, 0, 11,"Switch", true);
+        Event event7 = new SensorEvent(0.00024, 0, 1,"TempSensor", 12.0);
+        Event event8 = new SensorEvent(0.00028, 0, 1,"TempSensor", 13.0);
+        List<Event> simulatedEvents = new ArrayList<>();
+        simulatedEvents.add(event1);
+        simulatedEvents.add(event2);
+        simulatedEvents.add(event3);
+        simulatedEvents.add(event4);
+        simulatedEvents.add(event5);
+        simulatedEvents.add(event6);
+        simulatedEvents.add(event7);
+        simulatedEvents.add(event8);
+        for (int i = 0; i < simulatedEvents.size(); i++) {
+            server.processIncomingEvent(simulatedEvents.get(i));
+        }
+        System.out.println(simulatedEvents);
+        int mostActiveEntity = server.mostActiveEntity();
+        assertEquals(1, mostActiveEntity);
+    }
+
+    @Test
+    public void testMostActiveEntity2() {
+        Server server = new Server(client);
+        Event event1 = new ActuatorEvent(0.00010015, 0, 11,"Switch", true);
+        Event event2 = new SensorEvent(0.000111818, 0, 1,"TempSensor", 1.0);
+        Event event3 = new ActuatorEvent(0.00015, 0, 5,"Switch", false);
+        Event event4 = new SensorEvent(0.00022, 0, 1,"TempSensor", 11.0);
+        Event event5 = new ActuatorEvent(0.00027, 0, 11,"Switch", true);
+        Event event6 = new ActuatorEvent(0.00047, 0, 11,"Switch", true);
+        Event event7 = new SensorEvent(0.00024, 0, 1,"TempSensor", 12.0);
+        List<Event> simulatedEvents = new ArrayList<>();
+        simulatedEvents.add(event1);
+        simulatedEvents.add(event2);
+        simulatedEvents.add(event3);
+        simulatedEvents.add(event4);
+        simulatedEvents.add(event5);
+        simulatedEvents.add(event6);
+        simulatedEvents.add(event7);
+        for (int i = 0; i < simulatedEvents.size(); i++) {
+            server.processIncomingEvent(simulatedEvents.get(i));
+        }
+        System.out.println(simulatedEvents);
+        int mostActiveEntity = server.mostActiveEntity();
+        assertEquals(11, mostActiveEntity);
+    }
     @Test
     public void testGetAllEntities() {
         Server server = new Server(client);
