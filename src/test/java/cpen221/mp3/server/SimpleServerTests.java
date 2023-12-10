@@ -173,4 +173,84 @@ public class SimpleServerTests {
         Set<Integer> result = new HashSet<>(server.getAllEntities());
         assertEquals(expected,result);
     }
+
+
+    @Test
+    public void testnextNpredictedValuesDouble() {
+        Server server = new Server(client);
+        Event e1 = new SensorEvent(1.0001,0,20,"Sensor",1.1);
+        Event e2 = new SensorEvent(1.0002,0,20,"Sensor",2.1);
+        Event e3 = new SensorEvent(1.0003,0,20,"Sensor",1.1);
+        List<Event> events= new ArrayList<>();
+        events.add(e1);
+        events.add(e2);
+        events.add(e3);
+        List<Double> predictedval = new ArrayList<>();
+        predictedval.add(2.1);
+        predictedval.add(1.1);
+        predictedval.add(2.1);
+        predictedval.add(1.1);
+        predictedval.add(2.1);
+        for(int i = 0 ; i< events.size(); i++)
+        {
+            server.processIncomingEvent(events.get(i));
+        }
+        List<Object> result = server.predictNextNValues(20,5);
+        assertEquals(predictedval, result);
+
+    }
+    @Test
+    public void testnextNpredictedValuesBoolean() {
+        Server server = new Server(client);
+        Event e4 = new ActuatorEvent(1.0004,0,20,"Switch",false);
+        Event e5 = new ActuatorEvent(1.0005,0,20,"Switch",false);
+        Event e6 = new ActuatorEvent(1.0006,0,20,"Switch",false);
+        Event e7 = new ActuatorEvent(1.0007,0,20,"Switch",true);
+        List<Event> events= new ArrayList<>();
+        events.add(e4);
+        events.add(e5);
+        events.add(e6);
+        events.add(e7);
+        List<Boolean> predictedval = new ArrayList<>();
+        predictedval.add(false);
+        predictedval.add(true);
+        predictedval.add(false);
+        predictedval.add(true);
+        predictedval.add(false);
+        predictedval.add(true);
+        for(int i = 0 ; i< events.size(); i++)
+        {
+            server.processIncomingEvent(events.get(i));
+        }
+        List<Object> result = server.predictNextNValues(20,6);
+        assertEquals(predictedval, result);
+
+    }
+    @Test
+    public void testnextNpredictedTimestamps() {
+        Server server = new Server(client);
+        Event e4 = new ActuatorEvent(1.0004,0,20,"Switch",false);
+        Event e5 = new ActuatorEvent(1.0005,0,20,"Switch",false);
+        Event e6 = new ActuatorEvent(1.0006,0,20,"Switch",false);
+        Event e7 = new ActuatorEvent(1.0007,0,20,"Switch",true);
+        List<Event> events= new ArrayList<>();
+        events.add(e4);
+        events.add(e5);
+        events.add(e6);
+        events.add(e7);
+        List<Double> predictedval = new ArrayList<>();
+        predictedval.add(1.0008);
+        predictedval.add(1.0009);
+        predictedval.add(1.001);
+        predictedval.add(1.00106);
+        predictedval.add(1.00113);
+        predictedval.add(1.0022);
+        for(int i = 0 ; i< events.size(); i++)
+        {
+            server.processIncomingEvent(events.get(i));
+        }
+        List<Double> result = server.predictNextNtimestamps(20,6);
+        assertEquals(predictedval, result);
+
+    }
 }

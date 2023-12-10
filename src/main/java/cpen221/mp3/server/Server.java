@@ -21,6 +21,7 @@ public class Server {
     private int clientId;
     private double maxWaitTime = 2; // in seconds
 
+
     private ConcurrentSkipListSet<Event> events = new ConcurrentSkipListSet<>(new Comparator<Event>() {
         @Override
         public int compare(Event o1, Event o2) {
@@ -242,20 +243,22 @@ public class Server {
         }
         return entityId;
     }
-
     /**
      * the client can ask the server to predict what will be
-     * the next n timestamps for the next n events
+     * the next n values of the values for the next n events
      * of the given entity of the client (the entity is identified by its ID).
+     * The values correspond to Event.getValueDouble() or Event.getValueBoolean()
+     * based on the type of the entity. That is why the return type is List<Object>.
      *
      * If the server has not received any events for an entity with that ID,
      * or if that Entity is not registered for the client, then this method should return an empty list.
      *
      * @param entityId the ID of the entity
-     * @param n the number of timestamps to predict
-     * @return list of the predicted timestamps
+     * @param n the number of double value to predict
+     * @return list of the predicted values
      */
-    public List<Object> predictNextNValues(int entityId, int n, double alpha) {
+
+    public List<Object> predictNextNValues(int entityId, int n) {
         List<Object> predictedValues = new ArrayList<>();
 
         // Filter events associated with the specified entity ID
@@ -268,20 +271,20 @@ public class Server {
         if (!eventsForEntity.isEmpty()) {
             Event sampleEvent = eventsForEntity.get(0); // Sample event to determine the type
 
-            if ("boolean".equals(sampleEvent.getEntityType())) { // Replace "boolean" with the actual type
+            if ((!sampleEvent.getValueBoolean() || sampleEvent.getValueBoolean())&& sampleEvent.getValueDouble()==-1 ) {
                 // Predict the next N boolean values using logistic regression
                 List<Boolean> historicalValues = eventsForEntity.stream()
                         .map(Event::getValueBoolean)
                         .collect(Collectors.toList());
 
                 predictedValues.addAll(predictNextNBooleanValues(historicalValues, n));
-            } else if ("double".equals(sampleEvent.getEntityType())) { // Replace "double" with the actual type
+            } else {
                 // Predict the next N double values using Exponential Moving Average (EMA)
                 List<Double> historicalValues = eventsForEntity.stream()
                         .map(Event::getValueDouble)
                         .collect(Collectors.toList());
 
-                predictedValues.addAll(predictNextNDoubleValues(historicalValues, n, alpha));
+                predictedValues.addAll(predictNextNDoubleValues(historicalValues, n));
             }
         }
 
@@ -292,22 +295,109 @@ public class Server {
      *
      * @param historicalValues list of historical double values
      * @param n the number of values to predict
-     * @param alpha smoothing factor for double values (0 < alpha < 1)
      * @return list of the predicted double values
      */
-    private static List<Double> predictNextNDoubleValues(List<Double> historicalValues, int n, double alpha) {
+    private static List<Double> predictNextNDoubleValues(List<Double> historicalValues, int n)
+    {
         List<Double> predictedValues = new ArrayList<>();
+        if (!historicalValues.isEmpty())
+        {
+            double size = historicalValues.size();
+            double ema = historicalValues.get(historicalValues.size()- 1);
+            double alpha = 2.0 /(size + 1.0);
+            int counter = 0;
 
-        if (!historicalValues.isEmpty()) {
-            double ema = historicalValues.get(historicalValues.size() - 1);
-
-            for (int i = 0; i < n; i++) {
-                // Calculate the next EMA
-                ema = alpha * historicalValues.get(i) + (1 - alpha) * ema;
-
-                // Add the predicted value to the result
-                predictedValues.add(ema);
+            for(int i = 0 ; i< historicalValues.size()-1; i++)
+            {
+                if(historicalValues.get(i).equals(historicalValues.get(i+1)))
+                {
+                    counter++;
+                }
             }
+            if(counter == historicalValues.size()-1)
+            {
+                for(int j = 0 ; j<n ; j++)
+                {
+                    predictedValues.add(historicalValues.get(0));
+                }
+            }
+            else if( historicalValues.size() % 2 == 0)
+            {
+                int count1 = 0;
+                int count2 = 0;
+              for(int i = 0 ; i < historicalValues.size(); i=i+2)
+              {
+                  if (historicalValues.get(i).equals(historicalValues.get(0))) {
+                      count1++;
+                  }
+                  if (historicalValues.get(i + 1).equals(historicalValues.get(1))) {
+                      count2++;
+                  }
+              }
+                  if(count1 == count2)
+                  {
+                      for(int j = 0; j < n ; j=j+2)
+                      {
+                          predictedValues.add(historicalValues.get(0));
+                          predictedValues.add(historicalValues.get(1));
+                      }
+                      if(n%2 !=0)
+                      {
+                          predictedValues.remove(n);
+                      }
+                  }
+                  else
+                  {
+                      for (int i = 0; i < n; i++)
+                      {
+                          // Calculate the next EMA
+                          ema = alpha * historicalValues.get(historicalValues.size()-1-i) + (1 - alpha) * ema;
+
+                          // Add the predicted value to the result
+                          predictedValues.add(ema);
+                      }
+                  }
+            }
+
+
+            else if( historicalValues.size() % 2 !=0)
+            {
+                int count1=0;
+                int count2=0;
+             for(int i = 0 ; i < historicalValues.size() ; i=i+2) {
+                 if (historicalValues.get(i).equals(historicalValues.get(0))) {
+                     count1++;
+                 }
+                 if (i + 1 < historicalValues.size()) {
+                     if (historicalValues.get(i + 1).equals(historicalValues.get(1))) {
+                         count2++;
+                     }
+                 }
+             }
+                 if(count1 - count2 == 1)
+                 {
+                     for(int j = 0; j < n ; j=j+2)
+                     {
+                         predictedValues.add(historicalValues.get(1));
+                         predictedValues.add(historicalValues.get(0));
+                     }
+                     if(n%2 !=0)
+                     {
+                         predictedValues.remove(n);
+                     }
+                 }
+                 else {
+                     for (int i = 0; i < n; i++)
+                         {
+                             // Calculate the next EMA
+                             ema = alpha * historicalValues.get(Math.abs(historicalValues.size()-1-i)% n) + (1 - alpha) * ema;
+                             // Add the predicted value to the result
+                             predictedValues.add(ema);
+                         }
+                     }
+
+            }
+
         }
 
         return predictedValues;
@@ -324,40 +414,146 @@ public class Server {
         List<Boolean> predictedValues = new ArrayList<>();
 
         if (!historicalValues.isEmpty()) {
-            // Logistic regression parameters (simplified for illustration)
-            double intercept = 0.0; // Adjust based on your needs
-            double slope = 0.1; // Adjust based on your needs
+            // Logistic regression parameters
+            double weight = 2.0 / (historicalValues.size() + 1.0);
+            int counter = 0;
 
-            for (int i = 0; i < n; i++) {
-                // Apply sigmoid function to predict probability
-                double probability = 1.0 / (1.0 + Math.exp(-(intercept + slope)));
-                boolean prediction = probability > 0.5; // Threshold for binary prediction
-                predictedValues.add(prediction);
+            for (int i = 0; i < historicalValues.size() - 1; i++) {
+                if (historicalValues.get(i).equals(historicalValues.get(i + 1))) {
+                    counter++;
+                }
             }
-        }
+            if (counter == historicalValues.size()-1) {
+                for(int j = 0 ; j<n ; j++)
+                {
+                    predictedValues.add(historicalValues.get(0));
+                }
+            } else if (historicalValues.size() % 2 == 0) {
+                int count1 = 0;
+                int count2 = 0;
+                for (int i = 0; i < historicalValues.size(); i = i + 2)
+                {
+                    if (historicalValues.get(i).equals(historicalValues.get(0)))
+                    {
+                        count1++;
+                    }
+                    if (historicalValues.get(i + 1).equals(historicalValues.get(1))) {
+                        count2++;
+                    }
+                }
+                if (count1 == count2) {
+                    for (int j = 0; j < n; j = j + 2) {
+                        predictedValues.add(historicalValues.get(0));
+                        predictedValues.add(historicalValues.get(1));
+                    }
+                    if (n % 2 != 0) {
+                        predictedValues.remove(n);
+                    }
+                }
+                else
+                {
+                    List<Double> copy = new ArrayList<>();
+                    for (int j = 0; j < n; j++) {
+                        copy.add(historicalValues.get(Math.abs(historicalValues.size() -1 - j)%n) ? 1.0 : 0.0);
+                        double logit = 0.0;
 
-        return predictedValues;
+                        for (int k = j; k < historicalValues.size(); k++)
+                        {
+                            // decay factor for older values
+                            double decayFactor = Math.pow(0.9, k);
+                            logit += decayFactor * weight * copy.get(k);
+                        }
+
+                        double prediction = sigmoid(logit);
+                        boolean predictedBoolean = prediction > 0.5;
+
+                        // Update weight based on prediction error
+                        double learningRate = 0.1;
+                        double error = predictedBoolean ? 1.0 - prediction : 0.0 - prediction;
+                        weight += learningRate * error;
+                        predictedValues.add(predictedBoolean);
+                    }
+
+                    return predictedValues;
+                }
+
+
+            } else if (historicalValues.size() % 2 != 0) {
+                int count1 = 0;
+                int count2 = 0;
+                for (int i = 0; i < historicalValues.size() ; i=i+2) {
+                    if (historicalValues.get(i).equals(historicalValues.get(0))) {
+                        count1++;
+                    }
+                    if (i + 1 < historicalValues.size()) {
+                        if (historicalValues.get(i + 1).equals(historicalValues.get(1))) {
+                            count2++;
+                        }
+                    }
+                }
+                if (count1 - count2 == 1) {
+                    for (int j = 0; j < n; j = j + 2) {
+                        predictedValues.add(historicalValues.get(1));
+                        predictedValues.add(historicalValues.get(0));
+                    }
+                    if (n % 2 != 0) {
+                        predictedValues.remove(n);
+                    }
+                }
+                else
+                {
+                    List<Double> copy = new ArrayList<>();
+                    for (int j = 0; j < n; j++) {
+                        copy.add(historicalValues.get(Math.abs(historicalValues.size()-1 - j)%n) ? 1.0 : 0.0);
+                        double logit = 0.0;
+
+                        for (int k = 0; k < copy.size(); k++) {
+                            // decay factor for older values
+                            double decayFactor = Math.pow(0.9, k);
+                            logit += decayFactor * weight * copy.get(k);
+                        }
+
+                        double prediction = sigmoid(logit);
+                        boolean predictedBoolean = prediction > 0.5;
+
+                        // Update weight based on prediction error
+                        double learningRate = 0.1;
+                        double error = predictedBoolean ? 1.0 - prediction : 0.0 - prediction;
+                        weight += learningRate * error;
+                        predictedValues.add(predictedBoolean);
+                    }
+
+                    return predictedValues;
+                }
+
+            }
+        }return predictedValues;
     }
-
-
+    /**
+     * Applies the sigmoid function to the given input.
+     *
+     * @param z The input value to the sigmoid function.
+     * @return The result of applying the sigmoid function to the input.
+     */
+    private static double sigmoid(double z) {
+        return 1.0 / (1.0 + Math.exp(-z));
+    }
 
     /**
      * the client can ask the server to predict what will be
-     * the next n values of the timestamps for the next n events
+     * the next n timestamps for the next n events
      * of the given entity of the client (the entity is identified by its ID).
-     * The values correspond to Event.getValueDouble() or Event.getValueBoolean()
-     * based on the type of the entity. That is why the return type is List<Object>.
      *
      * If the server has not received any events for an entity with that ID,
      * or if that Entity is not registered for the client, then this method should return an empty list.
      *
      * @param entityId the ID of the entity
-     * @param n the number of double value to predict
+     * @param n the number of timestamps to predict
      * @return list of the predicted timestamps
      */
-    public List<Object> predictNextNtimestamps(int entityId, int n,double alpha)
+    public List<Double> predictNextNtimestamps(int entityId, int n)
     {
-        List<Object> predictedValues2 = new ArrayList<>();
+        List<Double> predictedValues2 = new ArrayList<>();
 
         // Filter events associated with the specified entity ID
         List<Event> eventsForEntity2 = events.stream()
@@ -365,19 +561,29 @@ public class Server {
                 .collect(Collectors.toList());
 
         List<Double> historicalValues2 = eventsForEntity2.stream()
-                .map(Event::getValueDouble)
+                .map(Event::getTimeStamp)
                 .collect(Collectors.toList());
+
+        double alpha =  2.0 / (historicalValues2.size() + 1.0);
 
         if (!historicalValues2.isEmpty())
         {
-            double ema = historicalValues2.get(eventsForEntity2.size() - 1);
+            List<Double> difference = new ArrayList<>();
+            difference.add(0.0);
+            for(int j = 0 ; j< historicalValues2.size()-1 ; j++)
+            {
+                double diff = historicalValues2.get(j+1) - historicalValues2.get(j);
+                difference.add(diff);
+            }
+            double ema = difference.get(difference.size() - 1);
+            double addition = historicalValues2.get(historicalValues2.size()-1);
 
             for (int i = 0; i < n; i++) {
                 // Calculate the next EMA
-                ema = alpha * historicalValues2.get(i) + (1 - alpha) * ema;
-
+                ema = alpha * difference.get(Math.abs(difference.size()-1-i)%n) + (1 - alpha) * ema;
+                addition = addition+ema;
                 // Add the predicted value to the result
-                predictedValues2.add(ema);
+                predictedValues2.add(addition);
             }
 
         } return predictedValues2;
@@ -393,4 +599,5 @@ public class Server {
 
         requests.add(request);
     }
+
 }

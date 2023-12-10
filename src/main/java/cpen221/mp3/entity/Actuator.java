@@ -139,7 +139,7 @@ public class Actuator implements Entity{
      * @return true if the actuator is new (clientID is -1 already) and gets successfully registered or if it is already registered for clientId, else false
      */
     public boolean registerForClient(int clientId) {
-        // implement this method
+
         if (this.clientId == -1) {
             if (clientId >= 0) {
                 this.clientId = clientId;
@@ -212,7 +212,7 @@ public class Actuator implements Entity{
     }
 
     public void processServerMessage() {
-        // implement this method
+
         while(true){
             try {
                 InputStream is = receiveSocket.getInputStream();
