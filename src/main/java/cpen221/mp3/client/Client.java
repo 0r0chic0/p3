@@ -36,13 +36,13 @@ public class Client {
      */
     public boolean addEntity(Entity entity) {
 
-        if(entity.getClientId()==-1){
+        if (entity.getClientId() == -1) {
             entity.registerForClient(this.clientId);
             return true;
-        }else{
-            if(entity.getClientId()==this.clientId){
+        } else {
+            if (entity.getClientId() == this.clientId) {
                 return true;
-            }else {
+            } else {
                 return false;
             }
         }
@@ -51,7 +51,7 @@ public class Client {
     // sends a request to the server
     public void sendRequest(Request request) {
 
-        if(socket == null){
+        if (socket == null) {
             try {
                 socket = new Socket(serverIP,serverPort);
             } catch (IOException e) {
