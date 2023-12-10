@@ -322,38 +322,38 @@ public class Server {
             {
                 int count1 = 0;
                 int count2 = 0;
-              for(int i = 0 ; i < historicalValues.size(); i=i+2)
-              {
-                  if (historicalValues.get(i).equals(historicalValues.get(0))) {
-                      count1++;
-                  }
-                  if (historicalValues.get(i + 1).equals(historicalValues.get(1))) {
-                      count2++;
-                  }
-              }
-                  if(count1 == count2)
-                  {
-                      for(int j = 0; j < n ; j=j+2)
-                      {
-                          predictedValues.add(historicalValues.get(0));
-                          predictedValues.add(historicalValues.get(1));
-                      }
-                      if(n%2 !=0)
-                      {
-                          predictedValues.remove(n);
-                      }
-                  }
-                  else
-                  {
-                      for (int i = 0; i < n; i++)
-                      {
-                          // Calculate the next EMA
-                          ema = alpha * historicalValues.get(historicalValues.size()-1-i) + (1 - alpha) * ema;
+                for(int i = 0 ; i < historicalValues.size(); i=i+2)
+                {
+                    if (historicalValues.get(i).equals(historicalValues.get(0))) {
+                        count1++;
+                    }
+                    if (historicalValues.get(i + 1).equals(historicalValues.get(1))) {
+                        count2++;
+                    }
+                }
+                if(count1 == count2)
+                {
+                    for(int j = 0; j < n ; j=j+2)
+                    {
+                        predictedValues.add(historicalValues.get(0));
+                        predictedValues.add(historicalValues.get(1));
+                    }
+                    if(n%2 !=0)
+                    {
+                        predictedValues.remove(n);
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < n; i++)
+                    {
+                        // Calculate the next EMA
+                        ema = alpha * historicalValues.get(historicalValues.size()-1-i) + (1 - alpha) * ema;
 
-                          // Add the predicted value to the result
-                          predictedValues.add(ema);
-                      }
-                  }
+                        // Add the predicted value to the result
+                        predictedValues.add(ema);
+                    }
+                }
             }
 
 
@@ -361,37 +361,37 @@ public class Server {
             {
                 int count1=0;
                 int count2=0;
-             for(int i = 0 ; i < historicalValues.size() ; i=i+2) {
-                 if (historicalValues.get(i).equals(historicalValues.get(0))) {
-                     count1++;
-                 }
-                 if (i + 1 < historicalValues.size()) {
-                     if (historicalValues.get(i + 1).equals(historicalValues.get(1))) {
-                         count2++;
-                     }
-                 }
-             }
-                 if(count1 - count2 == 1)
-                 {
-                     for(int j = 0; j < n ; j=j+2)
-                     {
-                         predictedValues.add(historicalValues.get(1));
-                         predictedValues.add(historicalValues.get(0));
-                     }
-                     if(n%2 !=0)
-                     {
-                         predictedValues.remove(n);
-                     }
-                 }
-                 else {
-                     for (int i = 0; i < n; i++)
-                         {
-                             // Calculate the next EMA
-                             ema = alpha * historicalValues.get(Math.abs(historicalValues.size()-1-i)% n) + (1 - alpha) * ema;
-                             // Add the predicted value to the result
-                             predictedValues.add(ema);
-                         }
-                     }
+                for(int i = 0 ; i < historicalValues.size() ; i=i+2) {
+                    if (historicalValues.get(i).equals(historicalValues.get(0))) {
+                        count1++;
+                    }
+                    if (i + 1 < historicalValues.size()) {
+                        if (historicalValues.get(i + 1).equals(historicalValues.get(1))) {
+                            count2++;
+                        }
+                    }
+                }
+                if(count1 - count2 == 1)
+                {
+                    for(int j = 0; j < n ; j=j+2)
+                    {
+                        predictedValues.add(historicalValues.get(1));
+                        predictedValues.add(historicalValues.get(0));
+                    }
+                    if(n%2 !=0)
+                    {
+                        predictedValues.remove(n);
+                    }
+                }
+                else {
+                    for (int i = 0; i < n; i++)
+                    {
+                        // Calculate the next EMA
+                        ema = alpha * historicalValues.get(Math.abs(historicalValues.size()-1-i)% n) + (1 - alpha) * ema;
+                        // Add the predicted value to the result
+                        predictedValues.add(ema);
+                    }
+                }
 
             }
 
@@ -447,32 +447,32 @@ public class Server {
                         predictedValues.remove(n);
                     }
                 }
-                else
-                {
+                else {
                     List<Double> copy = new ArrayList<>();
-                    for (int j = 0; j < n; j++) {
-                        copy.add(historicalValues.get(Math.abs(historicalValues.size() -1 - j)%n) ? 1.0 : 0.0);
-                        double logit = 0.0;
+                    for (int j = 0; j < historicalValues.size(); j++) {
+                        copy.add(historicalValues.get(j) ? 1.0 : 0.0);
 
-                        for (int k = j; k < historicalValues.size(); k++)
-                        {
-                            // decay factor for older values
-                            double decayFactor = Math.pow(0.9, k);
-                            logit += decayFactor * weight * copy.get(k);
-                        }
-
-                        double prediction = sigmoid(logit);
-                        boolean predictedBoolean = prediction > 0.5;
-
-                        // Update weight based on prediction error
-                        double learningRate = 0.1;
-                        double error = predictedBoolean ? 1.0 - prediction : 0.0 - prediction;
-                        weight += learningRate * error;
-                        predictedValues.add(predictedBoolean);
+                    }
+                    double logit = 0.0;
+                    for (int k = 0; k < copy.size(); k++) {
+                        // decay factor for older values
+                        double decayFactor = Math.pow(0.9, k);
+                        logit += decayFactor * weight * copy.get(k);
                     }
 
-                    return predictedValues;
+                    double prediction = sigmoid(logit);
+                    // Update weight based on prediction error
+                    for (int l = 0; l < n; l++) {
+                        double learningRate = 0.3;
+                        double error = historicalValues.get(Math.abs(copy.size()-1-l)%n) ? 1.0 - prediction : 0.0 - prediction;
+                        weight += learningRate * error;
+                        boolean predictedBoolean = weight > 0.5;
+                        predictedValues.add(predictedBoolean);
+                    }
                 }
+
+                return predictedValues;
+
 
 
             } else if (historicalValues.size() % 2 != 0) {
@@ -497,33 +497,33 @@ public class Server {
                         predictedValues.remove(n);
                     }
                 }
-                else
-                {
+                else {
                     List<Double> copy = new ArrayList<>();
-                    for (int j = 0; j < n; j++) {
-                        copy.add(historicalValues.get(Math.abs(historicalValues.size()-1 - j)%n) ? 1.0 : 0.0);
-                        double logit = 0.0;
+                    for (int j = 0; j < historicalValues.size(); j++) {
+                        copy.add(historicalValues.get(j) ? 1.0 : 0.0);
+                    }
+                    double logit = 0.0;
+                    for (int k = 0; k < copy.size(); k++) {
+                        // decay factor for older values
+                        double decayFactor = Math.pow(0.9, k);
+                        logit += decayFactor * weight * copy.get(k);
+                    }
 
-                        for (int k = 0; k < copy.size(); k++) {
-                            // decay factor for older values
-                            double decayFactor = Math.pow(0.9, k);
-                            logit += decayFactor * weight * copy.get(k);
-                        }
+                    double prediction = sigmoid(logit);
 
-                        double prediction = sigmoid(logit);
-                        boolean predictedBoolean = prediction > 0.5;
-
-                        // Update weight based on prediction error
-                        double learningRate = 0.1;
-                        double error = predictedBoolean ? 1.0 - prediction : 0.0 - prediction;
+                    for (int l = 0; l < n; l++) {
+                        double learningRate = 0.3;
+                        double error = historicalValues.get(Math.abs(copy.size()-1-l)%n) ? 1.0 - prediction : 0.0 - prediction;
                         weight += learningRate * error;
+                        boolean predictedBoolean = weight > 0.5;
                         predictedValues.add(predictedBoolean);
                     }
+                }
 
                     return predictedValues;
                 }
 
-            }
+
         }return predictedValues;
     }
     /**

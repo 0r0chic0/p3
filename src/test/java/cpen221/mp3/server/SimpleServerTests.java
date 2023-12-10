@@ -203,7 +203,7 @@ public class SimpleServerTests {
     public void testnextNpredictedValuesBoolean() {
         Server server = new Server(client);
         Event e4 = new ActuatorEvent(1.0004,0,20,"Switch",false);
-        Event e5 = new ActuatorEvent(1.0005,0,20,"Switch",false);
+        Event e5 = new ActuatorEvent(1.0005,0,20,"Switch",true);
         Event e6 = new ActuatorEvent(1.0006,0,20,"Switch",false);
         Event e7 = new ActuatorEvent(1.0007,0,20,"Switch",true);
         List<Event> events= new ArrayList<>();
